@@ -43,3 +43,6 @@ _AssetInbox/*
 
 # AI 工作区数据（记忆、临时脚本），不属于工程
 .workbuddy/
+
+# 本地 GitHub CLI 登录配置（含 token，绝不提交）
+.ghconfig/
