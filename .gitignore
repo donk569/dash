@@ -1,0 +1,45 @@
+# ===== Unity 自动生成 / 缓存（不要提交）=====
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# 自动生成的解决方案与 IDE 文件
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+.vs/
+.idea/
+.vscode/
+.vsconfig
+
+# 系统垃圾
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== 本项目特有 =====
+# 与 Unity 工程无关的 Python 缓存
+Cacheuv/
+
+# 素材原始包 / 解压目录 / 预览图：只保留可复现的生成脚本
+_AssetInbox/*
+!_AssetInbox/*.py
+
+# AI 工作区数据（记忆、临时脚本），不属于工程
+.workbuddy/

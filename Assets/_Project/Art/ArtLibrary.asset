@@ -1,0 +1,99 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61c2fc589c2ef2744925842531e0c93a, type: 3}
+  m_Name: ArtLibrary
+  m_EditorClassIdentifier: 
+  playerIdle:
+  - {fileID: 21300000, guid: 0a2847f55b74b1e45bd0e761fffd1669, type: 3}
+  - {fileID: 21300000, guid: 052caba51526eb64abe0c5bc446dec33, type: 3}
+  - {fileID: 21300000, guid: 41a078b0ad743db4eb9607d2048f9fd8, type: 3}
+  - {fileID: 21300000, guid: a52ffa15bda28b148972a7049d2b36e9, type: 3}
+  playerRun:
+  - {fileID: 21300000, guid: 0d3fa94b7a654be4d950aac5efa86009, type: 3}
+  - {fileID: 21300000, guid: 28e03b60cacfb7d4d896fcd5a604d534, type: 3}
+  - {fileID: 21300000, guid: b90689713074fe84a80f3da40f212f90, type: 3}
+  - {fileID: 21300000, guid: a85142b149a97fc4194a42a33f510b30, type: 3}
+  - {fileID: 21300000, guid: 67b4aafb4c585cf46b61143a5cacf876, type: 3}
+  - {fileID: 21300000, guid: ec35add7246f81f4eb0670d7a4492a3f, type: 3}
+  - {fileID: 21300000, guid: 0a1a22832c560f24fa587fe5f3eba835, type: 3}
+  - {fileID: 21300000, guid: 256c28811119da743b7252c818e487e2, type: 3}
+  playerRise:
+  - {fileID: 21300000, guid: 28e03b60cacfb7d4d896fcd5a604d534, type: 3}
+  playerFall:
+  - {fileID: 21300000, guid: a85142b149a97fc4194a42a33f510b30, type: 3}
+  playerLand: []
+  playerShoot:
+  - {fileID: 21300000, guid: e51cd9a33c654344dbf12ce8576d9690, type: 3}
+  playerHurt:
+  - {fileID: 21300000, guid: 6f2c4991d2dd5634aa7ed83b9111df23, type: 3}
+  droneFrames:
+  - {fileID: 21300000, guid: a9578bb2ea27db340b3f75fae0eaf2f1, type: 3}
+  - {fileID: 21300000, guid: 5259b2b09d9b6614fa6d64f81c2cc71d, type: 3}
+  - {fileID: 21300000, guid: 16e56bf7259b5ba40a1d86cba0089cd7, type: 3}
+  - {fileID: 21300000, guid: 6d655d81aaaf92a4bb9fbb7e7366e949, type: 3}
+  turretFrames:
+  - {fileID: 21300000, guid: 691923314fb23344fa3c89e3878b4904, type: 3}
+  - {fileID: 21300000, guid: c48c3ce80a944c54495d67b64632b0dc, type: 3}
+  - {fileID: 21300000, guid: 5e1658807dd41d84c85979fb9e1823c0, type: 3}
+  - {fileID: 21300000, guid: cf48a8aa0777acf4da639016be9b59d1, type: 3}
+  - {fileID: 21300000, guid: 6f29747f4468e5d44aea6ce44a4202d4, type: 3}
+  - {fileID: 21300000, guid: 69a93efd87c639a4ab9c08956354f3b3, type: 3}
+  tileRoof: {fileID: 21300000, guid: 16c48f233f2eb1840a354d3899ade304, type: 3}
+  tileWall: {fileID: 21300000, guid: 0ffc4917ccb91fc45a118179625eb3d3, type: 3}
+  tileFloat: {fileID: 21300000, guid: c8e98b3b82faa99498fd2ca574460785, type: 3}
+  tileNeon: {fileID: 21300000, guid: f1e505056c2f29e4f891425a9af61a32, type: 3}
+  tilePipe: {fileID: 21300000, guid: f0f3f28976e592e4cae9550e87221678, type: 3}
+  dashArrow: {fileID: 21300000, guid: a9aec41da8be0284da90c4136db23b7a, type: 3}
+  antenna: {fileID: 21300000, guid: 1b9c733f321435b479f6e6881239513f, type: 3}
+  banners:
+  - {fileID: 21300000, guid: ca7e0c34054432b4d8d0c0fd0151ea34, type: 3}
+  - {fileID: 21300000, guid: 51096448fc2ac3540ad701712fac024b, type: 3}
+  - {fileID: 21300000, guid: d4b6f63250f59794794f3f23682cda34, type: 3}
+  torchFrames: []
+  flagFrames: []
+  openSign: {fileID: 21300000, guid: 1f3e91c421f3fe342a51438f307486b3, type: 3}
+  controlBox: {fileID: 21300000, guid: bbf6331dafd33df40bf5262a94d0ebf2, type: 3}
+  bigBanners:
+  - {fileID: 21300000, guid: 9f516552ab805474ab891d8d12c8af54, type: 3}
+  - {fileID: 21300000, guid: 588d51c4ea2f39d43972cf919d7c4e63, type: 3}
+  - {fileID: 21300000, guid: 7d7cb6c4312f7064f85cb6f243f6f2c5, type: 3}
+  - {fileID: 21300000, guid: 2d3ac6cd1e5e58b42b4b5337231bd8f7, type: 3}
+  hitFrames:
+  - {fileID: 21300000, guid: 1bbd21650aaab1441b775aec2b2237a9, type: 3}
+  - {fileID: 21300000, guid: 7d482151a1398dd4db00c4b98240c2c5, type: 3}
+  - {fileID: 21300000, guid: 9021f70c5f480354190477f07e8822b2, type: 3}
+  explosionFrames:
+  - {fileID: 21300000, guid: 3effd6cfb434f5a49835559b07b0d2bb, type: 3}
+  - {fileID: 21300000, guid: 1cdf460f1b164994d8aa0d117db6f012, type: 3}
+  - {fileID: 21300000, guid: 7044d8f216aea4e4aa7e96a460d84eaf, type: 3}
+  - {fileID: 21300000, guid: d57350fd65191744584106d71393a1bb, type: 3}
+  - {fileID: 21300000, guid: cb2f26b7240b7e7489c1c4b27e5f2f6e, type: 3}
+  - {fileID: 21300000, guid: 8c3a438fdc398034d9d700d067408ea0, type: 3}
+  heart: {fileID: 21300000, guid: bc48cef240e66c543a71190569f6aeed, type: 3}
+  white: {fileID: 21300000, guid: 76edf7c08144c8a41a21dd66b1716a71, type: 3}
+  dustFrames:
+  - {fileID: 21300000, guid: 7202112caeb72c644bc0484e5aa703e7, type: 3}
+  - {fileID: 21300000, guid: 711ebc1219877c8478f2b36a36a59208, type: 3}
+  - {fileID: 21300000, guid: c7f45722b38fd96488ff04f120aaf457, type: 3}
+  uiDigits: {fileID: 21300000, guid: 0cc28e1df9ffeba42a22dc50283a0899, type: 3}
+  uiScanline: {fileID: 21300000, guid: 9916d5c06d7620640997ac96cb51021f, type: 3}
+  sword: {fileID: 21300000, guid: 403c24df638291c4cbf365bceccfc498, type: 3}
+  coin: {fileID: 21300000, guid: 57a4c0466d8d9bf4da766e55b9bc8e65, type: 3}
+  shopIcon: {fileID: 21300000, guid: ed03a7c7a5c421848acf5b7dfd157ae2, type: 3}
+  moonGlow: {fileID: 21300000, guid: 26bc734d44ea98644a9a954bc21108a9, type: 3}
+  meteorHead: {fileID: 21300000, guid: 717c66e344c9af34db41e9ca3770faca, type: 3}
+  lightCone: {fileID: 21300000, guid: 7368ae5d1639b1b43bcc27c7a38beb26, type: 3}
+  billboard: {fileID: 21300000, guid: 4e54d9d0e6491c24ba871300f53140e2, type: 3}
+  sky: {fileID: 21300000, guid: 2a000380256f4b14cb0fd7d4a848c321, type: 3}
+  bgFar: {fileID: 21300000, guid: 0a55465dce2360c48ac6f0dac4bf3327, type: 3}
+  bgMid: {fileID: 21300000, guid: 16702bed311f7c8468fd4a024a5155af, type: 3}
+  bgNear: {fileID: 21300000, guid: 6ad9c74d7a147164eb2958f33d53fb13, type: 3}
