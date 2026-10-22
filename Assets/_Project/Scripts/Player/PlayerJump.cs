@@ -28,6 +28,7 @@ namespace TiantaiDash
         Rigidbody2D _rb;
         BoxCollider2D _col;
         DashController _dash;
+        IaiCharge _iai;
         bool _dashJumpUsed;
         float _lastGroundedTime = -99f;
         float _lastLandFxTime = -99f;
@@ -52,6 +53,7 @@ namespace TiantaiDash
             _rb = GetComponent<Rigidbody2D>();
             _col = GetComponent<BoxCollider2D>();
             _dash = GetComponent<DashController>();
+            _iai = GetComponent<IaiCharge>();
         }
 
         void Update()
@@ -64,7 +66,13 @@ namespace TiantaiDash
             // 冲刺结束就还回这一次机会
             if (_dash == null || !_dash.IsDashing) _dashJumpUsed = false;
 
-            if (input != null && input.JumpPressed) RequestJump();
+            if (input == null) return;
+
+            // 蓄力中的跳跃由 IaiCharge 处理（带冷却），这里不抢输入，
+            // 否则冷却期内的跳会被这个脚本照常执行，等于冷却失效。
+            if (_iai != null && _iai.IsChargePhase) return;
+
+            if (input.ConsumeJump()) RequestJump();
         }
 
         public void SetInput(InputHandler handler) { input = handler; }

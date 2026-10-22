@@ -55,6 +55,10 @@ namespace TiantaiDash
         [Tooltip("蓄力期间的移动系数：0.35 = 慢速滑行（推荐）；0 = 完全停住；1 = 不减速")]
         [Range(0f, 1f)] public float chargeMoveFactor = 0.35f;
 
+        [Header("蓄力跳")]
+        [Tooltip("蓄力中按跳的冷却（秒）。冷却期间按跳会被吞掉，蓄力继续，防止无限取消")]
+        public float chargeJumpCooldown = 1.0f;
+
         [Header("三段参数")]
         public Stage[] stages =
         {
@@ -90,7 +94,13 @@ namespace TiantaiDash
         bool _releaseQueued;      // 锁存"松手"：一次性事件不能在拔刀延迟里被吞掉
         bool _holdUntilLand;      // 蓄力中被跳跃打断：减速滑行保留到落地
         float _holdReleaseAt;     // 兜底时间，防止一直没落地
+        float _nextChargeJumpTime;
         SkyEvents _sky;
+
+        /// <summary>蓄力跳是否可用（给 UI / 调试看）。</summary>
+        public bool ChargeJumpReady => Time.time >= _nextChargeJumpTime;
+        /// <summary>蓄力跳剩余冷却（秒）。</summary>
+        public float ChargeJumpCooldownLeft => Mathf.Max(0f, _nextChargeJumpTime - Time.time);
 
         public Phase CurrentPhase => _phase;
         public float ChargeRatio => maxChargeTime <= 0f ? 1f : Mathf.Clamp01(_charge / maxChargeTime);
@@ -188,8 +198,9 @@ namespace TiantaiDash
                     break;
 
                 case Phase.Charging:
-                    // 蓄力中按跳：取消蓄力、保留减速滑行，直接用这个速度跳过障碍
-                    if (input != null && input.JumpPressed) { CancelChargeForJump(); break; }
+                    // 蓄力中按跳：要么跳出去（带冷却），要么被冷却吞掉、继续蓄力。
+                    // 用 ConsumeJump 独占这一帧的跳，PlayerJump 在蓄力期间不抢输入。
+                    if (input != null && input.ConsumeJump()) TryChargeJump();
                     TickCharging();
                     break;
 
@@ -394,6 +405,20 @@ namespace TiantaiDash
             _holdUntilLand = false;
 
             if (OnCancelled != null) OnCancelled();
+        }
+
+        /// <summary>
+        /// 蓄力跳：冷却好了才允许。跳出去的同时取消蓄力，但保留减速滑行到落地。
+        /// 冷却中返回 false，调用方应该把这次跳吞掉（蓄力继续）。
+        /// </summary>
+        public bool TryChargeJump()
+        {
+            if (!ChargeJumpReady) return false;
+
+            _nextChargeJumpTime = Time.time + chargeJumpCooldown;
+            if (jump != null) jump.RequestJump();
+            CancelChargeForJump();
+            return true;
         }
 
         /// <summary>

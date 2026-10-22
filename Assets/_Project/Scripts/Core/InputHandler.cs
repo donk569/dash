@@ -26,6 +26,17 @@ namespace TiantaiDash
         public bool ConfirmPressed { get; private set; }
         public int SelectUpgradeIndex { get; private set; } = -1;
 
+        /// <summary>
+        /// 取走这一帧的"按下跳跃"。同一帧只允许一个系统消费，
+        /// 这样"蓄力跳带冷却"就能把冷却期内的跳真正吞掉，而不是两个系统各跳一次。
+        /// </summary>
+        public bool ConsumeJump()
+        {
+            if (!JumpPressed) return false;
+            JumpPressed = false;
+            return true;
+        }
+
         void Update()
         {
             var gm = GameManager.Instance;
