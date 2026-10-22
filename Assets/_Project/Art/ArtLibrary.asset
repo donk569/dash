@@ -153,6 +153,10 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 6a1d2e22ad7cefc468e84c547cfc36e2, type: 3}
   dashIcon: {fileID: 21300000, guid: 7286e26b04d7741429e12f9a4099ed49, type: 3}
   wallVariants:
+  - {fileID: 21300000, guid: c9f388b302149394fa71935ee69614f6, type: 3}
+  - {fileID: 21300000, guid: c9f388b302149394fa71935ee69614f6, type: 3}
+  - {fileID: 21300000, guid: 5ef4e1bb353fafa40a8bb67f9fb56d3b, type: 3}
+  - {fileID: 21300000, guid: 4af2b85a2d69f8c4fa6b4ea64e7f6fdf, type: 3}
   - {fileID: 21300000, guid: bad5bad26e89530438e702ab3ab5b9d6, type: 3}
   - {fileID: 21300000, guid: 70ded4cfc35ea8d418737e08b726237e, type: 3}
   - {fileID: 21300000, guid: 995005fc8e1850b41972914c4a8f053f, type: 3}

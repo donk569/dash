@@ -29,6 +29,13 @@ namespace TiantaiDash
                 var p = pieces[i];
                 if (p == null || p.isFloating || p.body == null) continue;
 
+                // 楼体向下一直延伸到屏幕外，别再让人看到"平台悬空"
+                if (p.bodyDepth < 40f)
+                {
+                    p.bodyDepth = 46f + (float)rng.NextDouble() * 24f;
+                    p.Apply();
+                }
+
                 Sprite wall = walls[rng.Next(walls.Length)];
                 if (wall != null) p.body.sprite = wall;
 

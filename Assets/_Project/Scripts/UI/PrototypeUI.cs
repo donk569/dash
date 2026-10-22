@@ -225,6 +225,8 @@ namespace TiantaiDash
                 case GameState.Failed: DrawFailed(gm, vw); break;
                 case GameState.Completed: DrawCompleted(gm, vw); break;
             }
+
+            Scanlines(vw);
         }
 
         /// <summary>离店后的 3-2-1-GO：压暗全屏 + 巨大数字，给玩家反应时间。</summary>
@@ -248,28 +250,60 @@ namespace TiantaiDash
             GUI.color = old;
         }
 
-        /// <summary>像素面板：深底 + 2px 亮框 + 1px 内暗线 + 四角像素点。全部整数矩形，永远硬边。</summary>
+        /// <summary>像素面板：深底 + 切角亮框（赛博风）+ 四角装饰点。</summary>
         void Panel(Rect r, Color border, Color bg, bool corners = true)
         {
             Fill(r, bg);
 
-            // 外框 1px 亮
-            Fill(new Rect(r.x, r.y, r.width, 1f), border);
-            Fill(new Rect(r.x, r.yMax - 1f, r.width, 1f), border);
-            Fill(new Rect(r.x, r.y, 1f, r.height), border);
-            Fill(new Rect(r.xMax - 1f, r.y, 1f, r.height), border);
+            const float c = 6f;
+            // 切角外框：四角各留 c 像素不画，再用阶梯补角
+            Fill(new Rect(r.x + c, r.y, r.width - c * 2f, 1f), border);
+            Fill(new Rect(r.x + c, r.yMax - 1f, r.width - c * 2f, 1f), border);
+            Fill(new Rect(r.x, r.y + c, 1f, r.height - c * 2f), border);
+            Fill(new Rect(r.xMax - 1f, r.y + c, 1f, r.height - c * 2f), border);
 
-            // 第二圈暗（做一点厚度，但仍然是硬边）
-            Fill(new Rect(r.x + 1f, r.y + 1f, r.width - 2f, 1f), new Color(border.r * 0.45f, border.g * 0.45f, border.b * 0.45f, 1f));
-            Fill(new Rect(r.x + 1f, r.yMax - 2f, r.width - 2f, 1f), new Color(border.r * 0.3f, border.g * 0.3f, border.b * 0.3f, 1f));
+            if (corners)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    float o = c - i - 1f;
+                    Fill(new Rect(r.x + i, r.y + o, 1f, 1f), border);
+                    Fill(new Rect(r.xMax - 1f - i, r.y + o, 1f, 1f), border);
+                    Fill(new Rect(r.x + i, r.yMax - 1f - o, 1f, 1f), border);
+                    Fill(new Rect(r.xMax - 1f - i, r.yMax - 1f - o, 1f, 1f), border);
+                }
+            }
+        }
 
-            if (!corners) return;
+        /// <summary>全屏扫描线 + 上下氛围光，压一层廉价 CRT 感。</summary>
+        void Scanlines(float vw)
+        {
+            Color old = GUI.color;
+            GUI.color = new Color(0f, 0f, 0f, 0.055f);
+            for (float y = 0f; y < VirtualHeight; y += 3f)
+                GUI.DrawTexture(new Rect(0f, y, vw, 1f), _white);
 
-            // 四角向内 3px 的装饰点
-            Fill(new Rect(r.x + 4f, r.y + 4f, 2f, 2f), border);
-            Fill(new Rect(r.xMax - 6f, r.y + 4f, 2f, 2f), border);
-            Fill(new Rect(r.x + 4f, r.yMax - 6f, 2f, 2f), border);
-            Fill(new Rect(r.xMax - 6f, r.yMax - 6f, 2f, 2f), border);
+            GUI.color = new Color(0.2f, 0.8f, 1f, 0.05f);
+            GUI.DrawTexture(new Rect(0f, 0f, vw, 36f), _white);
+            GUI.DrawTexture(new Rect(0f, VirtualHeight - 26f, vw, 26f), _white);
+            GUI.color = old;
+        }
+
+        /// <summary>偶发故障感的标题（青/品红错位）。</summary>
+        void GlitchLabel(Rect r, string text, GUIStyle style, Color? color = null)
+        {
+            Color body = color ?? White;
+            float t = Time.unscaledTime;
+            bool glitch = Mathf.Repeat(t * 0.7f, 4.1f) < 0.10f;
+            if (!glitch)
+            {
+                LabelShadow(r, text, style, body, 3);
+                return;
+            }
+
+            LabelShadow(new Rect(r.x - 2f, r.y, r.width, r.height), text, style, Cyan, 0);
+            LabelShadow(new Rect(r.x + 2f, r.y + 1f, r.width, r.height), text, style, new Color(1f, 0.28f, 0.66f), 0);
+            LabelShadow(r, text, style, body, 3);
         }
 
         /// <summary>文字 + 2px 硬阴影（像素游戏的标准做法，比描边更像老游戏）。</summary>
@@ -460,7 +494,9 @@ namespace TiantaiDash
             bool nextHeals = have >= need - 1;
 
             string txt = "击杀 " + have + "/" + need;
-            Color c = nextHeals ? new Color32(255, 214, 120, 255) : TextDim;
+            Color c = nextHeals
+                ? new Color(1f, 0.84f, 0.47f, 0.65f + 0.35f * Mathf.Sin(Time.unscaledTime * 6f))
+                : TextDim;
             LabelShadow(new Rect(vw * 0.5f - 110f, 6f, 220f, 22f), txt, _center, c, 2);
         }
 
@@ -480,7 +516,20 @@ namespace TiantaiDash
             float p = ready ? 1f : 1f - dash.ManualDashCooldownLeft / dash.ManualCooldown;
             p = Mathf.Clamp01(p);
 
-            if (p > 0f) Fill(new Rect(x, y, Mathf.Max(1f, Mathf.Floor(barW * p)), barH), ready ? Cyan : CyanDim);
+            if (p > 0f)
+            {
+                Color fillCol = ready
+                    ? Color.Lerp(Cyan, White, 0.2f + 0.2f * Mathf.Sin(Time.unscaledTime * 5f))
+                    : CyanDim;
+                Fill(new Rect(x, y, Mathf.Max(1f, Mathf.Floor(barW * p)), barH), fillCol);
+            }
+
+            // 就绪时一道高光扫过
+            if (ready)
+            {
+                float sweep = Mathf.Repeat(Time.unscaledTime * 1.1f, 1f);
+                Fill(new Rect(x + Mathf.Floor(barW * sweep), y, 7f, barH), new Color(1f, 1f, 1f, 0.7f));
+            }
 
             // 冲刺图标（新画的霓虹箭头）
             if (_dashIcon == null && ArtLibrary.Instance != null) _dashIcon = ArtLibrary.Instance.dashIcon;
@@ -672,7 +721,7 @@ namespace TiantaiDash
         {
             Backdrop(vw);
 
-            LabelShadow(new Rect(0f, 86f, vw, 56f), "商店", _title, Yellow);
+            LabelShadow(new Rect(0f, 86f, vw, 56f), "商店", _title, Yellow, 3);
 
             bool canBuy = PlayerWallet.CanAfford(currentShopPrice);
 
@@ -747,7 +796,7 @@ namespace TiantaiDash
         void DrawCompleted(GameManager gm, float vw)
         {
             Backdrop(vw);
-            LabelShadow(new Rect(0f, 150f, vw, 64f), "通关", _title, Cyan);
+            LabelShadow(new Rect(0f, 150f, vw, 64f), "通关", _title, Cyan, 3);
 
             var panel = new Rect(vw * 0.5f - 340f, 236f, 680f, 210f);
             Panel(panel, Cyan, PanelBg);
@@ -791,7 +840,7 @@ namespace TiantaiDash
             Panel(panel, accent, PanelBg);
             Fill(new Rect(panel.x + 2f, panel.y + 2f, panel.width - 4f, 4f), accent);
 
-            LabelShadow(new Rect(panel.x, panel.y + 30f, panel.width, 56f), title, _title, accent);
+            GlitchLabel(new Rect(panel.x, panel.y + 30f, panel.width, 56f), title, _title, accent);
 
             if (sub != null)
                 LabelShadow(new Rect(panel.x, panel.y + 92f, panel.width, 28f), sub, _center, White);
