@@ -17,6 +17,7 @@ namespace TiantaiDash
     {
         public PlayerHealth health;
         public DistanceTracker tracker;
+        ShopIcon[] _shops;
         public UpgradeManager upgrades;
         public DashController dash;
         public PlayerCombat combat;
@@ -364,6 +365,23 @@ namespace TiantaiDash
             {
                 var bar = new Rect(20f, 56f, Mathf.Min(vw - 40f, 620f), 16f);
                 PixelBar(bar, tracker.Progress01);
+
+                // 商店标记：按招牌的 X 换算到进度条上；已触发过的变灰
+                if (_shops == null) _shops = FindObjectsOfType<ShopIcon>();
+                if (_shops != null && _shops.Length > 0)
+                {
+                    float total = tracker.TotalDistance;
+                    for (int i = 0; i < _shops.Length; i++)
+                    {
+                        var shop = _shops[i];
+                        if (shop == null) continue;
+                        float p = Mathf.Clamp01((shop.transform.position.x - tracker.startX) / total);
+                        var marker = new Rect(bar.x + p * bar.width - 2f, bar.y - 4f, 4f, bar.height + 8f);
+                        Fill(marker, shop.Opened
+                            ? new Color(0.45f, 0.50f, 0.60f, 0.85f)
+                            : new Color32(255, 214, 120, 255));
+                    }
+                }
 
                 string dist = Mathf.RoundToInt(tracker.CurrentDistance) + "/" + Mathf.RoundToInt(tracker.TotalDistance);
                 PixelNumber(20f, 78f, dist, 2.2f, Cyan);
