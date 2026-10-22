@@ -63,9 +63,9 @@ namespace TiantaiDash
         [Header("三段参数")]
         public Stage[] stages =
         {
-            new Stage { name = "快斩", threshold = 0f,   damage = 1, slashTime = 0.14f, endAngle = 92f,  lengthScale = 1f,   trailCount = 6, shake = 0.25f, hitStop = 0.05f },
-            new Stage { name = "强斩", threshold = 0.4f, damage = 2, slashTime = 0.18f, endAngle = 100f, lengthScale = 1.15f, trailCount = 8, shake = 0.5f,  hitStop = 0.07f },
-            new Stage { name = "奥义", threshold = 0.8f, damage = 3, slashTime = 0.24f, endAngle = 108f, lengthScale = 1.3f,  trailCount = 8, shake = 0.85f, hitStop = 0.12f },
+            new Stage { name = "快斩", threshold = 0f,   damage = 1, slashTime = 0.14f, endAngle = 92f,  lengthScale = 1.20f, trailCount = 6, shake = 0.25f, hitStop = 0.05f },
+            new Stage { name = "强斩", threshold = 0.4f, damage = 2, slashTime = 0.18f, endAngle = 100f, lengthScale = 1.50f, trailCount = 8, shake = 0.5f,  hitStop = 0.07f },
+            new Stage { name = "奥义", threshold = 0.8f, damage = 3, slashTime = 0.24f, endAngle = 108f, lengthScale = 1.80f, trailCount = 8, shake = 0.85f, hitStop = 0.12f },
         };
 
         [Header("引用（留空自动找）")]

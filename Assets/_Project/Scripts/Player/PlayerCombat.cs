@@ -23,8 +23,8 @@ namespace TiantaiDash
 
         [Header("剑")]
         public SwordSwing sword;
-        [Tooltip("剑身判定圆半径（世界单位）。够大才能做到『进刀光就打得到』，0.62 ≈ 刀宽 ×1.3")]
-        public float swordRadius = 0.62f;
+        [Tooltip("剑身判定圆半径（世界单位）。够大才能做到『进刀光就打得到』；0.8 ≈ 刀宽 ×1.6，避免贴脸才砍到")]
+        public float swordRadius = 0.8f;
         [Tooltip("每级范围增益：剑长 +15%，判定半径 +12%")]
         public float lengthPerLevel = 0.15f;
         public float radiusPerLevel = 0.12f;

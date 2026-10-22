@@ -132,7 +132,7 @@ MonoBehaviour:
   cooldownReductionPerLevel: 0.18
   damage: 1
   sword: {fileID: 4405326748550455899}
-  swordRadius: 0.7
+  swordRadius: 0.8
   lengthPerLevel: 0.15
   radiusPerLevel: 0.12
   hitStop: 0.03
@@ -303,7 +303,7 @@ MonoBehaviour:
     damage: 1
     slashTime: 0.14
     endAngle: 92
-    lengthScale: 1
+    lengthScale: 1.2
     trailCount: 6
     shake: 0.25
     hitStop: 0.05
@@ -313,7 +313,7 @@ MonoBehaviour:
     damage: 2
     slashTime: 0.18
     endAngle: 100
-    lengthScale: 1.3
+    lengthScale: 1.5
     trailCount: 8
     shake: 0.5
     hitStop: 0.07
@@ -323,7 +323,7 @@ MonoBehaviour:
     damage: 3
     slashTime: 0.24
     endAngle: 108
-    lengthScale: 1.7
+    lengthScale: 1.8
     trailCount: 8
     shake: 0.85
     hitStop: 0.12
