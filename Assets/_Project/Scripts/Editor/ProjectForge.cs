@@ -130,6 +130,12 @@ namespace TiantaiDash.EditorTools
             wallet.coins = 0;
 
             ui.wallet = wallet;
+
+            // 击杀奖励（击杀 → 自动冲刺），挂 Game 上
+            KillReward reward = GetOrAdd<KillReward>(game);
+            reward.dash = null;
+            reward.iai = null;
+            ui.iai = GetOrAdd<IaiCharge>(GameObject.Find("Player"));
             ui.heart = lib.heart;
             ui.digitSheet = lib.uiDigits;
             ui.scanline = lib.uiScanline;
@@ -403,6 +409,9 @@ namespace TiantaiDash.EditorTools
 
             go.AddComponent<DashFx>();
 
+            // 居合拔刀蓄力（组件自己会在 Awake 里找 runner/jump/dash/combat/sword，
+            // 这里只挂上，参数用脚本默认值；后续在 Inspector 里调三段手感）
+            go.AddComponent<IaiCharge>();
 
             SavePrefab(go, "Player");
         }

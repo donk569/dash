@@ -25,6 +25,8 @@ namespace TiantaiDash
         public PlayerJump playerJump;
         public PlayerCombat playerCombat;
         public DashController dashController;
+        public IaiCharge iaiCharge;
+        public KillReward killReward;
 
         [Header("镜头 / 表现")]
         public CameraFollow cameraFollow;
@@ -75,7 +77,11 @@ namespace TiantaiDash
                 if (playerJump == null) playerJump = p.GetComponent<PlayerJump>();
                 if (playerCombat == null) playerCombat = p.GetComponent<PlayerCombat>();
                 if (dashController == null) dashController = p.GetComponent<DashController>();
+                if (iaiCharge == null) iaiCharge = p.GetComponent<IaiCharge>();
             }
+
+            if (iaiCharge == null) iaiCharge = FindObjectOfType<IaiCharge>();
+            if (killReward == null) killReward = Pick(GetComponent<KillReward>(), FindObjectOfType<KillReward>());
 
             if (cameraFollow == null) cameraFollow = FindObjectOfType<CameraFollow>();
             if (backdrop == null) backdrop = FindObjectOfType<ParallaxBackdrop>();
@@ -119,6 +125,13 @@ namespace TiantaiDash
                 ui.combat = playerCombat;
                 ui.input = input;
                 ui.levelManager = levelManager;
+                ui.iai = iaiCharge;
+            }
+
+            if (killReward != null)
+            {
+                killReward.dash = dashController;
+                killReward.iai = iaiCharge;
             }
 
             if (tracker != null && upgrades != null)

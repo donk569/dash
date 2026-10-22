@@ -23,6 +23,7 @@ namespace TiantaiDash
         public InputHandler input;
         public LevelManager levelManager;
         public PlayerWallet wallet;
+        public IaiCharge iai;
 
         [Header("商店")]
         [Tooltip("由 ShopIcon 在打开时写入")]
@@ -381,10 +382,13 @@ namespace TiantaiDash
                 }
             }
 
+            // ---- 玩家头顶的蓄力条 ----
+            DrawChargeBar();
+
             // ---- 底部操作提示：只在真正能操作时显示 ----
             if (gm.CurrentState != GameState.Playing) return;
 
-            string hint = "空格 跳跃    J 攻击    Esc 暂停    R 重开";
+            string hint = "左键 拔刀蓄力    右键 跳跃    Esc 暂停    R 重开";
             float hy = VirtualHeight - 42f;
             Fill(new Rect(20f, hy + 7f, 6f, 6f), CyanDim);
             LabelShadow(new Rect(32f, hy, vw - 60f, 24f), hint, _small, TextDim, 1);
@@ -392,6 +396,75 @@ namespace TiantaiDash
             if (dash != null && dash.IsDashing)
             {
                 LabelShadow(new Rect(vw - 200f, hy - 4f, 180f, 28f), "冲刺中", _hudTextR, Yellow);
+            }
+        }
+
+        /// <summary>
+        /// 居合蓄力条：钉在玩家头顶（世界坐标投影到虚拟 GUI 坐标），
+        /// 三段配色 + 阶段刻度 + 满蓄闪烁。只在蓄力中显示。
+        /// </summary>
+        void DrawChargeBar()
+        {
+            if (iai == null || !iai.IsCharging) return;
+
+            Camera cam = Camera.main;
+            if (cam == null) return;
+
+            Vector3 sp = cam.WorldToScreenPoint(iai.transform.position + Vector3.up * 2.35f);
+            if (sp.z <= 0f) return;
+
+            float scale = Screen.height / VirtualHeight;
+            if (scale <= 0f) return;
+
+            float cx = sp.x / scale;
+            float cy = VirtualHeight - sp.y / scale;
+
+            const float barW = 180f;
+            const float barH = 18f;
+            float top = Mathf.Round(cy - barH - 8f);
+            var outer = new Rect(Mathf.Round(cx - barW * 0.5f), top, barW, barH);
+
+            float p = iai.ChargeRatio;
+            bool full = iai.IsFull;
+
+            Color accent = full ? White : (p < 0.4f ? Cyan : (p < 0.8f ? Yellow : Purple));
+
+            Panel(outer, accent, new Color(0.03f, 0.05f, 0.10f, 0.94f), false);
+
+            // 分段填充（8px 一格，硬边）
+            float innerW = outer.width - 4f;
+            float filled = innerW * p;
+            for (float x = 0f; x < filled; x += 8f)
+            {
+                float w = Mathf.Min(6f, filled - x);
+                if (w <= 0f) break;
+                Fill(new Rect(outer.x + 2f + x, outer.y + 2f, w, outer.height - 4f), accent);
+            }
+
+            // 阶段刻度线
+            IaiCharge.Stage[] st = iai.Stages;
+            if (st != null)
+            {
+                for (int i = 1; i < st.Length; i++)
+                {
+                    float tx = outer.x + 2f + innerW * st[i].threshold;
+                    Fill(new Rect(Mathf.Round(tx) - 1f, outer.y + 1f, 2f, outer.height - 2f), Deep);
+                }
+            }
+
+            // 阶段名（条上方）
+            string name = st != null && st.Length > 0
+                ? st[Mathf.Clamp(iai.CurrentStage, 0, st.Length - 1)].name
+                : "";
+            LabelShadow(new Rect(outer.x, outer.y - 25f, outer.width, 22f), name, _center, accent, 1);
+
+            // 满蓄：白边闪烁 + MAX
+            if (full)
+            {
+                if (Mathf.Repeat(Time.unscaledTime, 0.14f) < 0.07f)
+                    Fill(new Rect(outer.x, outer.y, outer.width, 1f), White);
+
+                LabelShadow(new Rect(outer.xMax + 8f, outer.y + 1f, 60f, 18f), "MAX", _small, White, 1);
             }
         }
 

@@ -80,6 +80,21 @@ namespace TiantaiDash
             if (OnDashStarted != null) OnDashStarted();
         }
 
+        /// <summary>
+        /// 击杀奖励冲刺。**冲刺中直接返回 false，不重置计时器、不叠加速度**；
+        /// 返回 true 表示这次真的开了一段新冲刺。
+        /// </summary>
+        public bool RequestKillDash()
+        {
+            if (IsDashing) return false;
+
+            var gm = GameManager.Instance;
+            if (gm != null && !gm.IsPlaying) return false;
+
+            TriggerDash();
+            return IsDashing;
+        }
+
         void EndDash(bool fireShockwave)
         {
             IsDashing = false;
@@ -106,7 +121,10 @@ namespace TiantaiDash
 
                 _rammedThisDash.Add(id);
                 RamCount++;
-                target.TakeDamage(1);
+
+                EnemyHealth enemy = hits[i].GetComponentInParent<EnemyHealth>();
+                if (enemy != null) enemy.TakeDamage(1, true);
+                else target.TakeDamage(1);
 
                 CameraFollow.Shake(0.3f);
                 AudioManager.Play("sfx_hit", 1f, 0.9f);
@@ -136,7 +154,11 @@ namespace TiantaiDash
             for (int i = 0; i < hits.Length; i++)
             {
                 IDamageable target = hits[i].GetComponentInParent<IDamageable>();
-                if (target != null && target.IsAlive) target.TakeDamage(1);
+                if (target == null || !target.IsAlive) continue;
+
+                EnemyHealth enemy = hits[i].GetComponentInParent<EnemyHealth>();
+                if (enemy != null) enemy.TakeDamage(1, true);
+                else target.TakeDamage(1);
             }
         }
 

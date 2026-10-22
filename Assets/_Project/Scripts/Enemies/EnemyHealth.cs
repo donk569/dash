@@ -12,6 +12,11 @@ namespace TiantaiDash
         public bool IsAlive => CurrentHealth > 0;
 
         public event Action<EnemyHealth> OnDied;
+        /// <summary>被玩家打死时才触发（击杀冲刺奖励用）。环境伤害走 OnDied。</summary>
+        public event Action<EnemyHealth> OnKilledByPlayer;
+
+        /// <summary>致死的那一下是不是玩家打的。</summary>
+        public bool DiedByPlayer { get; private set; }
 
         SpriteRenderer _sr;
         Color _baseColor = Color.white;
@@ -33,8 +38,18 @@ namespace TiantaiDash
 
         public void TakeDamage(int amount)
         {
+            TakeDamage(amount, false);
+        }
+
+        /// <summary>
+        /// 带来源的受伤入口。玩家侧的伤害（挥剑 / 冲刺撞击 / 冲击波）必须传 byPlayer = true，
+        /// 否则击杀不会算到玩家头上、也就不会触发击杀冲刺。
+        /// </summary>
+        public void TakeDamage(int amount, bool byPlayer)
+        {
             if (!IsAlive) return;
 
+            if (byPlayer) DiedByPlayer = true;
             CurrentHealth -= amount;
             _flashUntil = Time.time + 0.08f;
             if (_sr != null) _sr.color = Color.white;
@@ -56,7 +71,11 @@ namespace TiantaiDash
             for (int i = 0; i < cols.Length; i++) cols[i].enabled = false;
 
             if (_sr != null) _sr.color = new Color(_baseColor.r, _baseColor.g, _baseColor.b, 0f);
+
+            // 两个事件分开：OnDied 给原有逻辑，OnKilledByPlayer 只奖励玩家击杀
             OnDied?.Invoke(this);
+            if (DiedByPlayer) OnKilledByPlayer?.Invoke(this);
+
             Destroy(gameObject, 0.15f);
         }
     }

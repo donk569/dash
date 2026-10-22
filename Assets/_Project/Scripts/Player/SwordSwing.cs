@@ -56,17 +56,25 @@ namespace TiantaiDash
         [Range(0.1f, 3f)] public float lengthScale = 1f;
 
         [Header("拖尾")]
-        public int trailCount = 3;
+        [Tooltip("默认残影层数；蓄力阶段可以临时覆盖")]
+        public int trailCount = 5;
         public Color trailColor = new Color(0.62f, 0.95f, 1f, 0.45f);
 
         [Header("音效 / 火花")]
         public string drawSfx = "sfx_impact";
         public string slashSfx = "sfx_dash";
 
+        const int MaxTrail = 8;
+
         SpriteRenderer _sr;
         Phase _phase = Phase.Sheathed;
         float _timer;
-        readonly SpriteRenderer[] _trail = new SpriteRenderer[4];
+        float _slashEndAngle;      // 运行时：蓄力阶段会把它推得更深
+        int _trailCount;
+        readonly SpriteRenderer[] _trail = new SpriteRenderer[MaxTrail];
+
+        public float SlashEndAngle => _slashEndAngle;
+        public int TrailCount => _trailCount;
 
         /// <summary>正在走拔剑 / 劈 / 收剑任一阶段。</summary>
         public bool IsBusy => _phase != Phase.Sheathed;
@@ -89,6 +97,9 @@ namespace TiantaiDash
 
             var art = ArtLibrary.Instance;
             if (_sr.sprite == null && art != null) _sr.sprite = art.sword;
+
+            _slashEndAngle = slashEndAngle;
+            _trailCount = Mathf.Clamp(trailCount, 0, MaxTrail);
 
             BuildTrail();
             ApplySheathed();
@@ -140,6 +151,40 @@ namespace TiantaiDash
         }
 
         /// <summary>强制回到"背在背后"（暂停 / 死亡 / 切状态时调用）。</summary>
+        /// <summary>
+        /// 蓄力表现：ratio 0 = 完全插在背后，1 = 刀身抽出一截、冷光最亮。
+        /// 只在 Sheathed 阶段生效，不会干扰正在进行的斩击。
+        /// </summary>
+        public void SetChargeVisual(float ratio)
+        {
+            if (_phase != Phase.Sheathed) return;
+
+            ratio = Mathf.Clamp01(ratio);
+
+            // 刀柄往上抬一点、角度外翻一点 —— 看起来像"手已经按上去、刀正在离鞘"
+            Vector3 pos = sheathedPos + new Vector3(0.10f, 0.22f, 0f) * ratio;
+            float ang = sheathedAngle + 12f * ratio;
+            SetPose(pos, ang);
+
+            if (_sr != null)
+            {
+                Color cold = new Color(0.72f, 0.95f, 1f, 1f);
+                _sr.color = Color.Lerp(Color.white, cold, ratio);
+            }
+        }
+
+        /// <summary>覆盖下劈终点角度（蓄力满时劈得更深）。</summary>
+        public void SetSlashEndAngle(float angle)
+        {
+            _slashEndAngle = Mathf.Clamp(angle, 40f, 170f);
+        }
+
+        /// <summary>覆盖残影层数（蓄力越高越密）。</summary>
+        public void SetTrailCount(int count)
+        {
+            _trailCount = Mathf.Clamp(count, 0, MaxTrail);
+        }
+
         public void Cancel()
         {
             _phase = Phase.Sheathed;
@@ -173,11 +218,11 @@ namespace TiantaiDash
                 case Phase.Slash:
                     float e = 1f - Mathf.Pow(1f - t, 2.6f);
                     SetPose(Vector3.Lerp(guardPos, slashEndPos, e),
-                            Mathf.Lerp(guardAngle, slashEndAngle, e));
+                            Mathf.Lerp(guardAngle, _slashEndAngle, e));
                     break;
                 case Phase.Sheathe:
                     SetPose(Bezier(slashEndPos, overShoulderPos, sheathedPos, t),
-                            Mathf.Lerp(slashEndAngle, sheathedAngle, t));
+                            Mathf.Lerp(_slashEndAngle, sheathedAngle, t));
                     break;
                 default:
                     ApplySheathed();
@@ -269,7 +314,11 @@ namespace TiantaiDash
         {
             SetPose(sheathedPos, sheathedAngle);
             SetOrder(sheathedOrder);
-            if (_sr != null) _sr.enabled = true;   // 待机时也一直看得见
+            if (_sr != null)
+            {
+                _sr.enabled = true;   // 待机时也一直看得见
+                _sr.color = Color.white;
+            }
         }
 
         void SetPose(Vector3 localPos, float angle)
@@ -306,6 +355,12 @@ namespace TiantaiDash
             {
                 var sr = _trail[i];
                 if (sr == null) continue;
+
+                if (i >= _trailCount)
+                {
+                    sr.enabled = false;
+                    continue;
+                }
 
                 if (t <= 0.05f)
                 {

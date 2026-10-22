@@ -109,8 +109,18 @@ namespace TiantaiDash
             if (droneFrames == null || droneFrames.Length == 0) droneFrames = art.droneFrames;
         }
 
+        /// <summary>蓄力时把流星 / 无人机 / 广告牌也停住，强化"世界静止"的观感。</summary>
+        public void SetPaused(bool paused)
+        {
+            _paused = paused;
+        }
+
+        bool _paused;
+
         void Update()
         {
+            if (_paused) return;
+
             float dt = Time.deltaTime;
             _clock += dt;
 
