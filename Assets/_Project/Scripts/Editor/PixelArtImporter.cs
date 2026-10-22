@@ -35,6 +35,8 @@ namespace TiantaiDash.EditorTools
 
             bool isPlayer = path.Contains("/Sprites/Player/");
             bool isNpc = path.Contains("/Sprites/Npc/");
+            // 商店是"立在地面上"的，pivot 放底部中心，门才会落在屋面上
+            bool isShop = path.Contains("prop_shop");
             // 剑和鞘要以握把为轴旋转，两者 pivot 必须完全一致，鞘才能精确套在刃上
             bool isSword = path.Contains("prop_sword") || path.Contains("prop_sheath");
 
@@ -42,12 +44,13 @@ namespace TiantaiDash.EditorTools
             importer.ReadTextureSettings(settings);
             settings.spriteMeshType = SpriteMeshType.FullRect;
             settings.spriteExtrude = 0;
-            settings.spriteAlignment = (isPlayer || isNpc || isSword)
+            settings.spriteAlignment = (isPlayer || isNpc || isShop || isSword)
                 ? (int)SpriteAlignment.Custom
                 : (int)SpriteAlignment.Center;
             importer.SetTextureSettings(settings);
 
             if (isPlayer || isNpc) importer.spritePivot = new Vector2(0.5f, 0.045f);
+            if (isShop) importer.spritePivot = new Vector2(0.5f, 0f);
             // 剑的轴心放在**握把中部**（手握住的位置），挥砍时绕手旋转才自然；
             // 放在最底部会让剑像"从脚底长出来"，放在中心则剑柄会穿到地下
             if (isSword) importer.spritePivot = new Vector2(0.5f, 0.13f);

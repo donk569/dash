@@ -103,6 +103,10 @@ namespace TiantaiDash
         public Sprite[] npcBiker;
         [Tooltip("NPC idle 帧（Cyborg）")]
         public Sprite[] npcCyborg;
+        [Tooltip("外墙窗户（玻璃半透明，透出窗里的人）")]
+        public Sprite windowProp;
+        [Tooltip("窗里的人物（头肩，Biker + Cyborg）")]
+        public Sprite[] windowNpc;
         [Tooltip("HUD 冲刺图标")]
         public Sprite dashIcon;
 

@@ -3,21 +3,23 @@ using UnityEngine;
 namespace TiantaiDash
 {
     /// <summary>
-    /// 屋顶生活：在已有屋顶上程序化摆装饰（晾衣绳 / 空调 / 水桶 / 盆栽 / 桌子 / 猫 / 霓虹招牌）
-    /// 和会循环 idle 的 NPC —— 不用重烘焙关卡，种子固定所以每次布局一致。
+    /// 屋顶生活（v2）：平台 = 屋顶，所以装饰分两处 ——
+    /// 1. **外墙**：窗户 + 窗里的 NPC 头肩 + 挂墙霓虹招牌；
+    /// 2. **屋顶面**：晾衣绳 / 空调 / 水塔 / 盆栽 / 桌子 / 猫（不再放招牌和站立 NPC）。
+    /// 种子固定，每次重开布局一致。
     /// </summary>
     public class RoofLife : MonoBehaviour
     {
         [Tooltip("固定种子：保证每次重开装饰位置一致")]
         public int seed = 20261022;
-        [Tooltip("每个屋顶不摆东西的概率")]
-        [Range(0f, 1f)] public float emptyChance = 0.2f;
-        [Tooltip("出现 NPC 的概率")]
-        [Range(0f, 1f)] public float npcChance = 0.35f;
-        [Tooltip("装饰和 NPC 的整体缩放")]
-        public float scale = 0.8f;
+        [Range(0f, 1f)] public float emptyChance = 0.12f;
+        [Range(0f, 1f)] public float windowPersonChance = 0.45f;
+        [Range(0f, 1f)] public float wallSignChance = 0.4f;
+        [Range(0f, 1f)] public float roofPropChance = 0.6f;
+        public float scale = 0.9f;
 
-        Sprite[] _props, _signs, _npcA, _npcB;
+        Sprite[] _props, _signs, _windowNpc;
+        Sprite _window;
 
         void Start()
         {
@@ -26,8 +28,8 @@ namespace TiantaiDash
 
             _props = art.roofProps;
             _signs = art.roofSigns;
-            _npcA = art.npcBiker;
-            _npcB = art.npcCyborg;
+            _window = art.windowProp;
+            _windowNpc = art.windowNpc;
 
             var rng = new System.Random(seed);
             var pieces = FindObjectsOfType<PlatformPiece>();
@@ -35,75 +37,98 @@ namespace TiantaiDash
             for (int i = 0; i < pieces.Length; i++)
             {
                 var p = pieces[i];
-                if (p == null || p.isFloating || p.width < 7f) continue;
+                if (p == null || p.isFloating || p.width < 5f) continue;
                 if (rng.NextDouble() < emptyChance) continue;
 
-                // 固定槽位 + 随机取用：同一屋顶的东西不会叠在一起
-                float[] slots = { -0.62f, -0.2f, 0.2f, 0.62f };
-                for (int s = slots.Length - 1; s > 0; s--)
+                int baseOrder = p.body != null ? p.body.sortingOrder : (p.slab != null ? p.slab.sortingOrder - 1 : 0);
+                float halfW = Mathf.Max(0.6f, p.width * 0.5f - 1.4f);
+
+                // ---- 外墙：1~2 扇窗（可能有人在窗里）
+                int windows = 1 + rng.Next(2);
+                for (int k = 0; k < windows; k++)
                 {
-                    int j = rng.Next(s + 1);
-                    float tmp = slots[s]; slots[s] = slots[j]; slots[j] = tmp;
+                    float x = Mathf.Lerp(-halfW, halfW, (float)rng.NextDouble());
+                    float y = -1.7f - (float)rng.NextDouble() * 1.6f;
+                    SpawnWindow(p, x, y, baseOrder, rng);
                 }
 
-                float halfW = Mathf.Max(0f, p.width * 0.5f - 2f);
-                int used = 0;
+                // ---- 外墙：挂墙招牌（不放在屋顶上）
+                if (_signs != null && _signs.Length > 0 && rng.NextDouble() < wallSignChance)
+                {
+                    float x = Mathf.Lerp(-halfW, halfW, (float)rng.NextDouble());
+                    SpawnWallSign(p, x, -3.4f - (float)rng.NextDouble(), baseOrder, rng);
+                }
 
-                int props = 1 + rng.Next(2);
-                for (int k = 0; k < props && used < slots.Length; k++)
-                    SpawnProp(p, rng, slots[used++] * halfW);
-
-                if (used < slots.Length && rng.NextDouble() < npcChance)
-                    SpawnNpc(p, rng, slots[used++] * halfW);
+                // ---- 屋顶面：小物件
+                if (_props != null && _props.Length > 0 && rng.NextDouble() < roofPropChance)
+                {
+                    float x = Mathf.Lerp(-halfW, halfW, (float)rng.NextDouble());
+                    SpawnRoofProp(p, x, rng);
+                }
             }
         }
 
-        void SpawnProp(PlatformPiece p, System.Random rng, float x)
+        void SpawnWindow(PlatformPiece p, float x, float y, int baseOrder, System.Random rng)
         {
-            bool useSign = _signs != null && _signs.Length > 0 && rng.NextDouble() < 0.3;
-            Sprite[] pool = useSign ? _signs : _props;
-            if (pool == null || pool.Length == 0) return;
+            if (_window == null) return;
 
-            Sprite sprite = pool[rng.Next(pool.Length)];
-            if (sprite == null) return;
-
-            var go = new GameObject(useSign ? "RoofSign" : "RoofProp");
+            var go = new GameObject("WallWindow");
             go.transform.SetParent(p.transform, false);
             go.transform.localScale = Vector3.one * scale;
+            go.transform.localPosition = new Vector3(x, y, 0f);
 
-            float h = sprite.bounds.size.y * scale;
-            go.transform.localPosition = new Vector3(x, h * 0.5f + 0.02f, 0f);
+            // 窗里的人（在窗框后面，透过玻璃看得出来）
+            if (_windowNpc != null && _windowNpc.Length > 0 && rng.NextDouble() < windowPersonChance)
+            {
+                Sprite head = _windowNpc[rng.Next(_windowNpc.Length)];
+                if (head != null)
+                {
+                    var person = new GameObject("WindowPerson");
+                    person.transform.SetParent(go.transform, false);
+                    person.transform.localPosition = new Vector3(0f, -0.02f, 0f);
+                    var psr = person.AddComponent<SpriteRenderer>();
+                    psr.sprite = head;
+                    psr.sortingOrder = baseOrder + 1;
+                    psr.flipX = rng.NextDouble() < 0.5;
+                }
+            }
+
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = _window;
+            sr.sortingOrder = baseOrder + 2;   // 窗框压在人物前面
+        }
+
+        void SpawnWallSign(PlatformPiece p, float x, float y, int baseOrder, System.Random rng)
+        {
+            Sprite sprite = _signs[rng.Next(_signs.Length)];
+            if (sprite == null) return;
+
+            var go = new GameObject("WallSign");
+            go.transform.SetParent(p.transform, false);
+            go.transform.localScale = Vector3.one * scale;
+            go.transform.localPosition = new Vector3(x, y, 0f);
+
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = sprite;
+            sr.sortingOrder = baseOrder + 2;
+
+            var glow = go.AddComponent<SignFlicker>();
+            glow.baseColor = Color.white;
+        }
+
+        void SpawnRoofProp(PlatformPiece p, float x, System.Random rng)
+        {
+            Sprite sprite = _props[rng.Next(_props.Length)];
+            if (sprite == null) return;
+
+            var go = new GameObject("RoofProp");
+            go.transform.SetParent(p.transform, false);
+            go.transform.localScale = Vector3.one * scale;
+            go.transform.localPosition = new Vector3(x, sprite.bounds.size.y * scale * 0.5f + 0.02f, 0f);
 
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = sprite;
             sr.sortingOrder = (p.slab != null ? p.slab.sortingOrder : 0) + 2;
-
-            // 招牌/Sign 都会呼吸式闪一下，像真正的霓虹灯
-            if (useSign)
-            {
-                var glow = go.AddComponent<SignFlicker>();
-                glow.baseColor = Color.white;
-            }
-        }
-
-        void SpawnNpc(PlatformPiece p, System.Random rng, float x)
-        {
-            Sprite[] frames = rng.NextDouble() < 0.5 ? _npcA : _npcB;
-            if (frames == null || frames.Length == 0) return;
-
-            var go = new GameObject("RoofNpc");
-            go.transform.SetParent(p.transform, false);
-            go.transform.localScale = Vector3.one * (scale * 0.95f);
-            go.transform.localPosition = new Vector3(x, 0.02f, 0f);
-
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = frames[0];
-            sr.sortingOrder = (p.slab != null ? p.slab.sortingOrder : 0) + 3;
-
-            var npc = go.AddComponent<RoofNpc>();
-            npc.frames = frames;
-            npc.faceLeft = rng.NextDouble() < 0.5;
-            npc.fps = 2.2f + (float)rng.NextDouble() * 1.6f;
         }
     }
 }

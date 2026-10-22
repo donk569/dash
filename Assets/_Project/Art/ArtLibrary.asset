@@ -141,6 +141,16 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 50c37baa54882bb4386d7307aa96b7e3, type: 3}
   - {fileID: 21300000, guid: 513805a295775904eaa46ba3becee939, type: 3}
   - {fileID: 21300000, guid: 23df67311e50d18458776ad33a9cee1c, type: 3}
+  windowProp: {fileID: 21300000, guid: 467bdb4ea34b7624f8a5d9594eec409b, type: 3}
+  windowNpc:
+  - {fileID: 21300000, guid: 7407a6ae636c80c4daa4f838d6bbd761, type: 3}
+  - {fileID: 21300000, guid: 5f4d622b70bd6654fa44467b9c71f946, type: 3}
+  - {fileID: 21300000, guid: 2d1cf5b22c71fa54b9160686194e1140, type: 3}
+  - {fileID: 21300000, guid: 7246112e862c52f479a7aa82b22a2971, type: 3}
+  - {fileID: 21300000, guid: f4cf9f2ce76539f4b84fa8fc1913e6e2, type: 3}
+  - {fileID: 21300000, guid: 9723e5c977a104b40ac16f8ea636fdbb, type: 3}
+  - {fileID: 21300000, guid: cea6811b3bf762b4a8f2311e8bb7e37f, type: 3}
+  - {fileID: 21300000, guid: 6a1d2e22ad7cefc468e84c547cfc36e2, type: 3}
   dashIcon: {fileID: 21300000, guid: 7286e26b04d7741429e12f9a4099ed49, type: 3}
   sky: {fileID: 21300000, guid: 2a000380256f4b14cb0fd7d4a848c321, type: 3}
   bgFar: {fileID: 21300000, guid: 0a55465dce2360c48ac6f0dac4bf3327, type: 3}

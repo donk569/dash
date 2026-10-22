@@ -13,6 +13,10 @@ namespace TiantaiDash
         [Header("价格（金币）")]
         public int price = 3;
 
+        [Header("外观")]
+        [Tooltip("目标世界缩放：让整个店面在场景里约等于这个倍数（1 = 原图尺寸 3x4 世界单位）")]
+        public float visualScale = 0.55f;
+
         [Header("浮动")]
         public float bobAmplitude = 0.18f;
         public float bobSpeed = 1.8f;
@@ -31,12 +35,22 @@ namespace TiantaiDash
 
         void Awake()
         {
-            _base = transform.position;
-            _openX = transform.position.x;
             _sr = GetComponentInChildren<SpriteRenderer>();
 
-            // 招牌要压在角色(20)、场景建筑之上，不然会被楼挡掉 —— 这就是"后面几家看不到店"的原因
+            // 招牌要压在角色(20)、场景建筑之上，不然会被楼挡掉
             if (_sr != null) _sr.sortingOrder = 25;
+
+            // 店面缩小：子物体自带缩放，所以按"当前世界缩放"归一化到 visualScale，避免叠乘
+            if (_sr != null)
+            {
+                float cur = _sr.transform.lossyScale.x;
+                if (cur > 0.0001f)
+                    _sr.transform.localScale *= Mathf.Max(0.05f, visualScale) / cur;
+            }
+            SnapToRoof();
+            bobAmplitude = 0f;   // 站在屋面上，不上下浮动
+            _base = transform.position;
+            _openX = transform.position.x;
 
             var hp = FindObjectOfType<PlayerHealth>();
             if (hp != null) _player = hp.transform;
@@ -48,6 +62,15 @@ namespace TiantaiDash
                 col.size = new Vector2(2.4f, 3.2f);
                 col.offset = new Vector2(0f, 1.2f);
             }
+        }
+
+        /// <summary>向下找屋面，把店面底部贴上去。</summary>
+        void SnapToRoof()
+        {
+            Vector2 origin = new Vector2(transform.position.x, transform.position.y + 2f);
+            RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, 8f, GameLayers.GroundMask);
+            if (hit.collider == null) return;
+            transform.position = new Vector3(transform.position.x, hit.point.y + 0.02f, transform.position.z);
         }
 
         void Update()
