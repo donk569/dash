@@ -30,6 +30,9 @@ namespace TiantaiDash
 
         public Transform player;
 
+        /// <summary>离店复活用的 X（商店招牌位置）；NaN = 用玩家当前位置找地面。</summary>
+        public float pendingSpawnX = float.NaN;
+
         /// <summary>当前要显示的倒计时文字（"" = 不显示）。</summary>
         public string Label { get; private set; } = "";
         public bool Counting { get; private set; }
@@ -56,6 +59,12 @@ namespace TiantaiDash
             if (_rb == null) _rb = player.GetComponent<Rigidbody2D>();
 
             Vector3 from = player.position;
+            if (!float.IsNaN(pendingSpawnX))
+            {
+                // 离店：以商店招牌的 X 为准，在它下方找平台
+                from = new Vector3(pendingSpawnX, player.position.y + 2f, player.position.z);
+                pendingSpawnX = float.NaN;
+            }
             float bestScore = float.MaxValue;
             Vector3 bestPoint = from;
             bool found = false;

@@ -17,6 +17,7 @@ namespace TiantaiDash
     {
         public PlayerHealth health;
         public DistanceTracker tracker;
+        public KillReward killReward;
         ShopIcon[] _shops;
         public UpgradeManager upgrades;
         public DashController dash;
@@ -358,6 +359,9 @@ namespace TiantaiDash
 
         void DrawHud(GameManager gm, float vw)
         {
+            // ---- 最上方中间：击杀进度（每 N 杀回 1 血，满 N 重新计数）----
+            DrawKillCounter(vw);
+
             // ---- 顶部中间：中键冲刺冷却条 ----
             DrawDashCooldownBar(vw);
 
@@ -445,6 +449,20 @@ namespace TiantaiDash
             }
         }
 
+        /// <summary>顶部的击杀计数：x / N，满 N 回 1 血并归零。</summary>
+        void DrawKillCounter(float vw)
+        {
+            if (killReward == null || killReward.killsPerHeal <= 0) return;
+
+            int need = killReward.killsPerHeal;
+            int have = killReward.KillProgress;
+            bool nextHeals = have >= need - 1;
+
+            string txt = "击杀 " + have + "/" + need;
+            Color c = nextHeals ? new Color32(255, 214, 120, 255) : TextDim;
+            LabelShadow(new Rect(vw * 0.5f - 110f, 6f, 220f, 22f), txt, _center, c, 2);
+        }
+
         /// <summary>顶部中间的冲刺冷却条：满了才亮，冷却中显示剩余秒数。</summary>
         void DrawDashCooldownBar(float vw)
         {
@@ -453,7 +471,7 @@ namespace TiantaiDash
             const float barW = 170f;
             const float barH = 9f;
             float x = Mathf.Round((vw - barW) * 0.5f);
-            float y = 18f;
+            float y = 32f;
 
             Fill(new Rect(x - 2f, y - 2f, barW + 4f, barH + 4f), new Color(0f, 0f, 0f, 0.55f));
 
@@ -464,7 +482,7 @@ namespace TiantaiDash
             if (p > 0f) Fill(new Rect(x, y, Mathf.Max(1f, Mathf.Floor(barW * p)), barH), ready ? Cyan : CyanDim);
 
             string label = ready ? "中键 冲刺" : "冲刺 " + Mathf.CeilToInt(dash.ManualDashCooldownLeft) + "s";
-            LabelShadow(new Rect(x, y + barH + 3f, barW, 20f), label, _center, ready ? White : TextDim, 1);
+            LabelShadow(new Rect(x + barW + 8f, y - 6f, 140f, 22f), label, _small, ready ? White : TextDim, 1);
         }
 
         /// <summary>

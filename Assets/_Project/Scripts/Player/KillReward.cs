@@ -33,10 +33,19 @@ namespace TiantaiDash
         public IaiCharge iai;
         public PlayerCombat combat;
 
+        [Header("击杀回血")]
+        [Tooltip("每击杀多少个回复 1 点血（0 = 关闭）")]
+        public int killsPerHeal = 3;
+        [Tooltip("留空自动找 PlayerHealth")]
+        public PlayerHealth health;
+
         public int KillCount { get; private set; }
         public int DashCount { get; private set; }
         /// <summary>因为奖励没兑现而补冲的次数（调试用）。</summary>
         public int QueuedDashCount { get; private set; }
+
+        /// <summary>距离下一次回血还差几个击杀（0..killsPerHeal-1）。</summary>
+        public int KillProgress => killsPerHeal <= 0 ? 0 : KillCount % killsPerHeal;
 
         EnemyHealth[] _enemies;
         int _lastRewardSwing = -1;
@@ -49,6 +58,7 @@ namespace TiantaiDash
             if (dash == null) dash = FindObjectOfType<DashController>();
             if (iai == null) iai = FindObjectOfType<IaiCharge>();
             if (combat == null) combat = FindObjectOfType<PlayerCombat>();
+            if (health == null) health = FindObjectOfType<PlayerHealth>();
         }
 
         void Start()
@@ -79,6 +89,13 @@ namespace TiantaiDash
         void HandleKilled(EnemyHealth enemy)
         {
             KillCount++;
+
+            // 每 killsPerHeal 杀回 1 点血（满血时不浪费）
+            if (killsPerHeal > 0 && KillCount % killsPerHeal == 0
+                && health != null && health.CurrentHealth < health.maxHealth)
+            {
+                health.Heal(1);
+            }
 
             int swing = combat != null ? combat.AttackCount : -1;
             bool sameSwing = swing == _lastRewardSwing

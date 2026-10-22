@@ -23,6 +23,9 @@ namespace TiantaiDash
         bool _opened;
         SpriteRenderer _sr;
 
+        /// <summary>最近一次打开的商店（离店后就地复活用）。</summary>
+        public static ShopIcon LastOpened;
+
         /// <summary>这家店是否已经触发过（进度条标记用）。</summary>
         public bool Opened => _opened;
 
@@ -31,6 +34,9 @@ namespace TiantaiDash
             _base = transform.position;
             _openX = transform.position.x;
             _sr = GetComponentInChildren<SpriteRenderer>();
+
+            // 招牌要压在角色(20)、场景建筑之上，不然会被楼挡掉 —— 这就是"后面几家看不到店"的原因
+            if (_sr != null) _sr.sortingOrder = 25;
 
             var hp = FindObjectOfType<PlayerHealth>();
             if (hp != null) _player = hp.transform;
@@ -74,7 +80,19 @@ namespace TiantaiDash
             if (gm == null || !gm.IsPlaying) return;
 
             _opened = true;
+            LastOpened = this;
             upgrades.RollUpgrades();
+
+            // 到店回满血
+            if (_player != null)
+            {
+                var hp = _player.GetComponent<PlayerHealth>();
+                if (hp != null) hp.Heal(hp.maxHealth);
+            }
+
+            // 离店后在这个招牌的位置复活
+            var flow = RunFlow.Instance;
+            if (flow != null) flow.pendingSpawnX = _openX;
 
             var ui = FindObjectOfType<PrototypeUI>();
             if (ui != null) ui.currentShopPrice = price;

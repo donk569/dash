@@ -131,6 +131,7 @@ namespace TiantaiDash
                 ui.input = input;
                 ui.levelManager = levelManager;
                 ui.iai = iaiCharge;
+                ui.killReward = killReward;
             }
 
             // 离店后的 3-2-1-GO 流程（组件挂在 Game 上，不需要额外往场景里拖东西）
