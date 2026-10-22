@@ -142,6 +142,9 @@ namespace TiantaiDash
             // 屋顶生活：给已有屋顶程序化加装饰和 NPC
             if (GetComponent<RoofLife>() == null) gameObject.AddComponent<RoofLife>();
 
+            // 楼体立面变体 + 消防梯/管道/霓虹条
+            if (GetComponent<BuildingVariety>() == null) gameObject.AddComponent<BuildingVariety>();
+
             if (killReward != null)
             {
                 killReward.dash = dashController;

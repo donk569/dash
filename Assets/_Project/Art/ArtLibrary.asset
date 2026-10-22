@@ -152,6 +152,14 @@ MonoBehaviour:
   - {fileID: 21300000, guid: cea6811b3bf762b4a8f2311e8bb7e37f, type: 3}
   - {fileID: 21300000, guid: 6a1d2e22ad7cefc468e84c547cfc36e2, type: 3}
   dashIcon: {fileID: 21300000, guid: 7286e26b04d7741429e12f9a4099ed49, type: 3}
+  wallVariants:
+  - {fileID: 21300000, guid: bad5bad26e89530438e702ab3ab5b9d6, type: 3}
+  - {fileID: 21300000, guid: 70ded4cfc35ea8d418737e08b726237e, type: 3}
+  - {fileID: 21300000, guid: 995005fc8e1850b41972914c4a8f053f, type: 3}
+  - {fileID: 21300000, guid: 823ea621228fa844ba3af06b9d7c0775, type: 3}
+  fireEscape: {fileID: 21300000, guid: 1796847ccd43ddc4dabadf44bbcbc242, type: 3}
+  pipes: {fileID: 21300000, guid: 7d3df51712878714b800ff9a6f13db22, type: 3}
+  neonStrip: {fileID: 21300000, guid: 91b8f6999de66cc45afdcd1f73b5d16a, type: 3}
   sky: {fileID: 21300000, guid: 2a000380256f4b14cb0fd7d4a848c321, type: 3}
   bgFar: {fileID: 21300000, guid: 0a55465dce2360c48ac6f0dac4bf3327, type: 3}
   bgMid: {fileID: 21300000, guid: 16702bed311f7c8468fd4a024a5155af, type: 3}

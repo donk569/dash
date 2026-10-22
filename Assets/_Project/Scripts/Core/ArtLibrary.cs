@@ -110,6 +110,13 @@ namespace TiantaiDash
         [Tooltip("HUD 冲刺图标")]
         public Sprite dashIcon;
 
+        [Header("楼体立面变体")]
+        [Tooltip("多种外墙贴图（16x16 可平铺），运行时分给不同楼")]
+        public Sprite[] wallVariants;
+        public Sprite fireEscape;
+        public Sprite pipes;
+        public Sprite neonStrip;
+
         [Header("背景")]
         public Sprite sky;
         public Sprite bgFar;
