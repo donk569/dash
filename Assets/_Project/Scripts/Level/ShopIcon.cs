@@ -19,9 +19,9 @@ namespace TiantaiDash
 
         [Header("圆形检测范围")]
         [Tooltip("玩家进入这个半径就自动进店（世界单位）")]
-        public float detectRadius = 6f;
+        public float detectRadius = 10f;
         [Tooltip("圆心相对商店的偏移（一般抬到店面中部）")]
-        public Vector2 detectOffset = new Vector2(0f, 1.2f);
+        public Vector2 detectOffset = new Vector2(4f, 7f);
 
         [Header("浮动")]
         public float bobAmplitude = 0.18f;
