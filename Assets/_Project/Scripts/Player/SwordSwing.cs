@@ -22,6 +22,20 @@ namespace TiantaiDash
     {
         public enum Phase { Sheathed, Draw, Guard, Slash, Sheathe }
 
+        [Header("武器是否已画在角色帧里")]
+        [Tooltip("true = 角色帧自带武器/拳脚，独立武器只做命中判定、不渲染（换整套带攻击帧的角色素材时用）")]
+        public bool weaponInSprite = true;
+
+        [Header("镰刀背负（替代腰间收刀）")]
+        [Tooltip("true = 待机/蓄力时把武器斜背在身上（凯隐式），不再用刀鞘")]
+        public bool carryOnBack = true;
+        [Tooltip("背负时握把位置：贴着身体中段")]
+        public Vector3 carriedPos = new Vector3(0.02f, 1.05f, 0f);
+        [Tooltip("背负倾角：0 = 竖直，正值 = 刀头向右上斜、刀刃压在肩上")]
+        public float carriedAngle = 38f;
+        [Tooltip("背负时武器层级：21 = 压在角色身前（更像\"横在身上\"），18 = 藏在身后")]
+        public int carriedOrder = 21;
+
         [Header("待机：腰间收刀")]
         [Tooltip("握把位置：贴腰侧、略偏身后（角色身高约 2.4u，腰高约 1.2）")]
         public Vector3 sheathedPos = new Vector3(-0.28f, 1.16f, 0f);
@@ -162,6 +176,20 @@ namespace TiantaiDash
             _phase == Phase.Slash && _slashTime > 0f && _timer / _slashTime >= hitWindowStart;
 
         public bool IsSwinging => IsBusy;
+
+        /// <summary>
+        /// 攻击动作进度（0~1），给角色帧动画用：斩击期间按时间推进，收刀段固定为 1。
+        /// </summary>
+        public float AttackProgress
+        {
+            get
+            {
+                if (_phase == Phase.Slash)
+                    return Mathf.Clamp01(_timer / Mathf.Max(0.001f, _slashTime));
+                if (_phase == Phase.Sheathe) return 1f;
+                return 0f;
+            }
+        }
 
         /// <summary>当前剑的朝向角（度，0 = 朝上）。</summary>
         public float CurrentAngle { get; private set; }
@@ -311,10 +339,8 @@ namespace TiantaiDash
             _slashFxDone = false;
             HideRing();
 
-            // 起手时刀仍在鞘里（层级低于鞘且刀身隐藏），出鞘交给 TickSlash 按进度切换
-            SetOrder(sheathedBladeOrder);
-            SetBladeVisible(false);
-            SetPose(sheathedPos, sheathedAngle);
+            // 起手时武器仍在背上（或鞘里），出鞘交给 TickSlash 按进度切换
+            ApplyRestPose();
 
             // 出鞘：柄部一小簇火花 + 金属摩擦声
             AudioManager.Play(drawSfx, 0.35f, 1.45f);
@@ -334,10 +360,8 @@ namespace TiantaiDash
             _chargeRatio = 0f;
             _slashFxDone = false;
             HideRing();
-            // 只是把手挪到刀柄上，刀还在鞘里
-            SetOrder(sheathedBladeOrder);
-            SetBladeVisible(false);
-            SetPose(sheathedPos, sheathedAngle);
+            // 只是把手挪到武器上，武器仍在背上
+            ApplyRestPose();
 
             AudioManager.Play(drawSfx, 0.35f, 1.45f);
             SpawnDrawFlash();
@@ -356,10 +380,10 @@ namespace TiantaiDash
             _chargeRatio = 0f;
             _slashFxDone = false;
             HideRing();
-            // 从腰侧起刀：翻转段刀身隐藏，翻转结束后才在身前出现
+            // 从背上起手：翻转段武器隐藏，翻转结束后才在身前出现
             SetOrder(sheathedBladeOrder);
             SetBladeVisible(false);
-            SetPose(guardPos, guardAngle);
+            SetPose(carryOnBack ? carriedPos : guardPos, carryOnBack ? carriedAngle : guardAngle);
 
             AudioManager.Play(slashSfx, 0.4f, 1.25f);
             SpawnSlashFx();
@@ -388,10 +412,19 @@ namespace TiantaiDash
                 return;
             }
 
-            // 蓄力时刀仍"在鞘里"（刀身隐藏），只把鞘口那一线留着
-            SetOrder(sheathedBladeOrder);
-            SetBladeVisible(false);
-            SetPose(ChargePos(_chargeRatio), guardAngle);
+            // 蓄力时：背负模式把镰刀继续斜背在身上（刀鞘已退休）；刀鞘模式保持藏刃
+            SetOrder(carryOnBack ? carriedOrder : sheathedBladeOrder);
+            if (carryOnBack)
+            {
+                SetBladeVisible(true);
+                SetSheathVisible(false);
+                SetPose(carriedPos, carriedAngle);
+            }
+            else
+            {
+                SetBladeVisible(false);
+                SetPose(ChargePos(_chargeRatio), guardAngle);
+            }
 
             if (_sr != null)
             {
@@ -488,10 +521,24 @@ namespace TiantaiDash
             switch (_phase)
             {
                 case Phase.Draw: TickDraw(); break;
-                case Phase.Guard: SetPose(ChargePos(_chargeRatio), guardAngle); break;
+                case Phase.Guard:
+                    if (carryOnBack) SetPose(carriedPos, carriedAngle);
+                    else SetPose(ChargePos(_chargeRatio), guardAngle);
+                    break;
                 case Phase.Slash: TickSlash(); break;
                 case Phase.Sheathe: TickSheathe(); break;
             }
+        }
+
+        /// <summary>
+        /// 武器画在角色帧里时，每帧强制关掉独立武器/刀鞘。
+        /// 只靠状态切换在某些初始化顺序下会被重新打开，这里做一道兜底。
+        /// </summary>
+        void LateUpdate()
+        {
+            if (!weaponInSprite) return;
+            if (_sr != null && _sr.enabled) _sr.enabled = false;
+            if (sheath != null && sheath.enabled) sheath.enabled = false;
         }
 
         void TickDraw()
@@ -617,8 +664,23 @@ namespace TiantaiDash
 
         void ApplySheathed()
         {
+            ApplyRestPose();
+        }
+
+        /// <summary>待机/蓄力的休息姿态：背负模式斜背在身上，刀鞘模式收进鞘里。</summary>
+        void ApplyRestPose()
+        {
+            SetOrder(carryOnBack ? carriedOrder : sheathedBladeOrder);
+            if (carryOnBack)
+            {
+                SetPose(carriedPos, carriedAngle);
+                SetBladeVisible(true);
+                SetSheathVisible(false);
+                if (_sr != null) _sr.color = Color.white;
+                return;
+            }
+
             SetPose(sheathedPos, sheathedAngle);
-            SetOrder(sheathedBladeOrder);
             SetSheathVisible(true);
             // 收刀时刀身整个收进鞘里：直接隐藏，否则鞘没盖住的部分（尤其刃尖）会露出来
             SetBladeVisible(false);
@@ -628,12 +690,19 @@ namespace TiantaiDash
         void SetBladeVisible(bool visible)
         {
             if (_sr == null) return;
+            // 武器已经画在角色帧里 → 独立武器只做判定，永远不渲染
+            if (weaponInSprite) { _sr.enabled = false; return; }
             _sr.enabled = hideBladeWhenSheathed ? visible : true;
         }
 
         void SetSheathVisible(bool visible)
         {
-            if (sheath != null) sheath.enabled = visible;
+            if (sheath == null) return;
+            if (weaponInSprite) { sheath.enabled = false; sheath.gameObject.SetActive(false); return; }
+            sheath.enabled = visible;
+            // 背负模式下去掉整个鞘物件：只关 renderer 会被初始化顺序再打开
+            if (carryOnBack || !visible) sheath.gameObject.SetActive(visible);
+            else sheath.gameObject.SetActive(true);
         }
 
         /// <summary>把鞘钉在腰间收刀姿态上。鞘是独立物件，拔刀时留在原地不动。</summary>

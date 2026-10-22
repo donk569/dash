@@ -70,6 +70,7 @@ namespace TiantaiDash
         PlayerRunner _runner;
         PlayerCombat _combat;
         IaiCharge _iai;
+        SwordSwing _sword;
 
         [Header("调试")]
         [Tooltip("打开后在 Inspector 能看到最近经历的姿态序列")]
@@ -99,7 +100,10 @@ namespace TiantaiDash
             _runner = GetComponent<PlayerRunner>();
             _combat = GetComponent<PlayerCombat>();
             _iai = GetComponent<IaiCharge>();
+            _sword = _combat != null ? _combat.sword : GetComponentInChildren<SwordSwing>();
 
+            // 素材总表是唯一来源：换了整套角色素材后，预制体上的旧引用不该再拦住新帧
+            FillFromLibrary();
             if (idleFrames == null || idleFrames.Length == 0) FillFromLibrary();
 
             if (_jump != null)
@@ -273,7 +277,8 @@ namespace TiantaiDash
                     break;
 
                 case Pose.Shoot:
-                    frame = First(shootFrames);
+                    // 攻击帧按斩击进度播：从素材包里换来的整套角色，一出刀就是一串连贯帧
+                    frame = AttackFrame();
                     break;
 
                 case Pose.Charge:
@@ -331,6 +336,17 @@ namespace TiantaiDash
 
             _lean = Mathf.MoveTowards(_lean, wantLean, leanSpeed * Time.deltaTime);
             _visual.localRotation = Quaternion.Euler(0f, 0f, -_lean);
+        }
+
+        /// <summary>攻击帧：按 SwordSwing.AttackProgress 在整套攻击帧里取样。</summary>
+        Sprite AttackFrame()
+        {
+            Sprite[] set = Has(shootFrames) ? shootFrames : null;
+            if (set == null) return null;
+            if (set.Length == 1) return set[0];
+            float p = _sword != null ? _sword.AttackProgress : 1f;
+            int idx = Mathf.Clamp((int)(p * set.Length), 0, set.Length - 1);
+            return set[idx];
         }
 
         static bool Has(Sprite[] set) { return set != null && set.Length > 0; }

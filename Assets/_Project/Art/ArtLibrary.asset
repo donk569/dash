@@ -13,30 +13,37 @@ MonoBehaviour:
   m_Name: ArtLibrary
   m_EditorClassIdentifier: 
   playerIdle:
-  - {fileID: 21300000, guid: 0a2847f55b74b1e45bd0e761fffd1669, type: 3}
-  - {fileID: 21300000, guid: 052caba51526eb64abe0c5bc446dec33, type: 3}
-  - {fileID: 21300000, guid: 41a078b0ad743db4eb9607d2048f9fd8, type: 3}
-  - {fileID: 21300000, guid: a52ffa15bda28b148972a7049d2b36e9, type: 3}
+  - {fileID: 21300000, guid: ca4d24ca21f5ced4cbe083c31ee8edb1, type: 3}
+  - {fileID: 21300000, guid: fa6a64818949bbd4799c1cd64d0bfaaa, type: 3}
+  - {fileID: 21300000, guid: 61b3964c34acaf5439ed443316a9a65f, type: 3}
+  - {fileID: 21300000, guid: d1267451af9e7bc46a8f0c13353a2432, type: 3}
   playerRun:
-  - {fileID: 21300000, guid: 0d3fa94b7a654be4d950aac5efa86009, type: 3}
-  - {fileID: 21300000, guid: 28e03b60cacfb7d4d896fcd5a604d534, type: 3}
-  - {fileID: 21300000, guid: b90689713074fe84a80f3da40f212f90, type: 3}
-  - {fileID: 21300000, guid: a85142b149a97fc4194a42a33f510b30, type: 3}
-  - {fileID: 21300000, guid: 67b4aafb4c585cf46b61143a5cacf876, type: 3}
-  - {fileID: 21300000, guid: ec35add7246f81f4eb0670d7a4492a3f, type: 3}
-  - {fileID: 21300000, guid: 0a1a22832c560f24fa587fe5f3eba835, type: 3}
-  - {fileID: 21300000, guid: 256c28811119da743b7252c818e487e2, type: 3}
+  - {fileID: 21300000, guid: 305c73080370fd540b91c65bfdeee926, type: 3}
+  - {fileID: 21300000, guid: 828e274fd2d322a4da05614f83397f86, type: 3}
+  - {fileID: 21300000, guid: bbdfce1e4dc16cb4ab1173c2703dd896, type: 3}
+  - {fileID: 21300000, guid: f34a50b411e90ec48935aca6c046ccc9, type: 3}
+  - {fileID: 21300000, guid: 35dcd4462058aa24aa3ef6087de4d854, type: 3}
+  - {fileID: 21300000, guid: 5ba6c826d6d504d42b9d717ef4a9b4b9, type: 3}
   playerRise:
-  - {fileID: 21300000, guid: 28e03b60cacfb7d4d896fcd5a604d534, type: 3}
+  - {fileID: 21300000, guid: 1cf8e3a368c40a447b9a7767093966ec, type: 3}
+  - {fileID: 21300000, guid: eb5ca6d7ac65b5b41a377a21320d3688, type: 3}
   playerFall:
-  - {fileID: 21300000, guid: a85142b149a97fc4194a42a33f510b30, type: 3}
+  - {fileID: 21300000, guid: 10642823b350b424c813875cc2387293, type: 3}
+  - {fileID: 21300000, guid: 3475bac845e607a4890444d75b4abe2e, type: 3}
   playerLand: []
   playerShoot:
-  - {fileID: 21300000, guid: e51cd9a33c654344dbf12ce8576d9690, type: 3}
+  - {fileID: 21300000, guid: 2228ae084eab90146b2c3e7614e6f7a4, type: 3}
+  - {fileID: 21300000, guid: d7074c2fc079a5a47acd03a00135dc38, type: 3}
+  - {fileID: 21300000, guid: ef5b29244e8d5ac45b5aa34ba6719760, type: 3}
+  - {fileID: 21300000, guid: 84d4fe7b53e325040a2dc872c541e6a3, type: 3}
+  - {fileID: 21300000, guid: b0d439719a9f4554a916196b125cde90, type: 3}
+  - {fileID: 21300000, guid: a8aa9f9ed13b06e41b3378a79b437711, type: 3}
   playerHurt:
-  - {fileID: 21300000, guid: 6f2c4991d2dd5634aa7ed83b9111df23, type: 3}
+  - {fileID: 21300000, guid: 1c5e30eec42242d498c7fab3fe819dd6, type: 3}
+  - {fileID: 21300000, guid: f1e4d190cd3ca1442afa65e51ebb1dd6, type: 3}
   playerCharge:
-  - {fileID: 21300000, guid: 1ee7710640d7f254db8cd23d69256b8d, type: 3}
+  - {fileID: 21300000, guid: ca4d24ca21f5ced4cbe083c31ee8edb1, type: 3}
+  - {fileID: 21300000, guid: fa6a64818949bbd4799c1cd64d0bfaaa, type: 3}
   droneFrames:
   - {fileID: 21300000, guid: a9578bb2ea27db340b3f75fae0eaf2f1, type: 3}
   - {fileID: 21300000, guid: 5259b2b09d9b6614fa6d64f81c2cc71d, type: 3}
