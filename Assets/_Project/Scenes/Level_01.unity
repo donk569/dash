@@ -10524,7 +10524,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4c70d61bc8fd064cb8f90d113e42061, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  price: 5
+  price: 3
   bobAmplitude: 0.18
   bobSpeed: 1.8
 --- !u!61 &404229645
@@ -15151,6 +15151,18 @@ MonoBehaviour:
   - id: sfx_iai_slash
     clip: {fileID: 8300000, guid: 76d3533dc2ea64b44921fc6937206b25, type: 3}
     volumeScale: 1.1
+  - id: sfx_count_3
+    clip: {fileID: 8300000, guid: 706ede5ae18a64d449854178e90e2f7a, type: 3}
+    volumeScale: 1
+  - id: sfx_count_2
+    clip: {fileID: 8300000, guid: 7a6a03e4951bb1b4f9369b25c021e26b, type: 3}
+    volumeScale: 1
+  - id: sfx_count_1
+    clip: {fileID: 8300000, guid: 4be75bf756f0a75478bbda7699e6519c, type: 3}
+    volumeScale: 1
+  - id: sfx_count_go
+    clip: {fileID: 8300000, guid: 137e336f6569ef647ac9b69b896a31ed, type: 3}
+    volumeScale: 1
 --- !u!114 &658396474
 MonoBehaviour:
   m_ObjectHideFlags: 0

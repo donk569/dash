@@ -73,6 +73,7 @@ namespace TiantaiDash
         GUIStyle _cardDesc;
         GUIStyle _center;
         GUIStyle _small;
+        GUIStyle _countdown;
 
         readonly List<GUIStyle> _styles = new List<GUIStyle>();
 
@@ -117,6 +118,7 @@ namespace TiantaiDash
             _cardDesc = Make(17, TextAnchor.UpperCenter, TextDim, true);
             _center = Make(18, TextAnchor.MiddleCenter, White);
             _small = Make(17, TextAnchor.MiddleLeft, TextDim);
+            _countdown = Make(120, TextAnchor.MiddleCenter, White);
         }
 
         GUIStyle Make(int size, TextAnchor anchor, Color color, bool wrap = false)
@@ -141,6 +143,9 @@ namespace TiantaiDash
 
             if (gm.CurrentState == GameState.UpgradeSelecting)
             {
+                // 右键 = 不选、直接离开（走"上平台 + 3-2-1-GO"流程）
+                if (input.RestartPressed) { LeavePanel(); return; }
+
                 int index = input.SelectUpgradeIndex;
                 if (index >= 0 && index < upgrades.CurrentChoices.Count) Choose(index);
                 return;
@@ -148,11 +153,8 @@ namespace TiantaiDash
 
             if (gm.CurrentState == GameState.ShopOpen)
             {
-                if (input.PausePressed)
-                {
-                    gm.SetState(GameState.Playing);
-                    return;
-                }
+                // 右键 = 不买、直接离开
+                if (input.RestartPressed || input.PausePressed) { LeavePanel(); return; }
 
                 int pick = input.SelectUpgradeIndex;
                 if (pick >= 0 && pick < upgrades.CurrentChoices.Count) TryBuy(pick);
@@ -173,6 +175,14 @@ namespace TiantaiDash
         void Choose(int index)
         {
             upgrades.ApplyUpgrade(index);
+            LeavePanel();
+        }
+
+        /// <summary>离开商店/增益面板：交给 RunFlow 站回安全平台并倒计时。</summary>
+        void LeavePanel()
+        {
+            var flow = RunFlow.Instance;
+            if (flow != null) { flow.ResumeRun(); return; }
             GameManager.Instance.SetState(GameState.Playing);
         }
 
@@ -188,7 +198,7 @@ namespace TiantaiDash
             PlayerWallet.TrySpend(currentShopPrice);
             upgrades.ApplyUpgrade(index);
             AudioManager.Play("sfx_portal", 0.65f, 1.25f);
-            GameManager.Instance.SetState(GameState.Playing);
+            LeavePanel();
         }
 
         void OnGUI()
@@ -208,10 +218,22 @@ namespace TiantaiDash
             {
                 case GameState.UpgradeSelecting: DrawUpgradeSelect(gm, vw); break;
                 case GameState.ShopOpen: DrawShop(gm, vw); break;
+                case GameState.Ready: DrawCountdown(vw); break;
                 case GameState.Paused: DrawPanel(vw, "已暂停", "Esc 继续      右键 重开本关", Cyan); break;
                 case GameState.Failed: DrawFailed(gm, vw); break;
                 case GameState.Completed: DrawCompleted(gm, vw); break;
             }
+        }
+
+        /// <summary>离店后的 3-2-1-GO：压暗全屏 + 巨大数字，给玩家反应时间。</summary>
+        void DrawCountdown(float vw)
+        {
+            var flow = RunFlow.Instance;
+            if (flow == null || string.IsNullOrEmpty(flow.Label)) return;
+
+            Fill(new Rect(0f, 0f, vw, VirtualHeight), new Color(0f, 0f, 0f, 0.35f));
+            LabelShadow(new Rect(0f, VirtualHeight * 0.30f, vw, 160f), flow.Label, _countdown, White, 4);
+            LabelShadow(new Rect(0f, VirtualHeight * 0.30f + 150f, vw, 30f), "准备", _sub, TextDim, 2);
         }
 
         // ============================================================ 绘制原语

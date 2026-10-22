@@ -54,7 +54,8 @@ namespace TiantaiDash
             if (IsTerminal) return;
 
             CurrentState = next;
-            bool paused = next == GameState.UpgradeSelecting || next == GameState.ShopOpen || next == GameState.Paused;
+            bool paused = next == GameState.UpgradeSelecting || next == GameState.ShopOpen
+                          || next == GameState.Paused || next == GameState.Ready;
             Time.timeScale = paused ? 0f : 1f;
 
             if (next == GameState.Completed)
