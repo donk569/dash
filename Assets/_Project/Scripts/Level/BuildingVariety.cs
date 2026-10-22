@@ -40,11 +40,11 @@ namespace TiantaiDash
                 float halfW = p.width * 0.5f;
 
                 if (rng.NextDouble() < fireEscapeChance)
-                    Attach(p, art.fireEscape, -halfW + 1.4f, -2.4f, order + 1, false);
+                    Attach(p, art.fireEscape, -halfW + 1.9f, -4.2f, order + 1, false);
                 if (rng.NextDouble() < pipeChance)
-                    Attach(p, art.pipes, halfW - 1.2f, -1.8f, order + 1, false);
+                    Attach(p, art.pipes, halfW - 1.1f, -3.4f, order + 1, false);
                 if (rng.NextDouble() < neonChance)
-                    Attach(p, art.neonStrip, -halfW + 0.7f, -1.4f, order + 1, true);
+                    Attach(p, art.neonStrip, -halfW + 0.6f, -3.4f, order + 1, true);
             }
         }
 

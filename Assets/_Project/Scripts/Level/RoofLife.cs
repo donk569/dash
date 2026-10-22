@@ -48,7 +48,7 @@ namespace TiantaiDash
                 for (int k = 0; k < windows; k++)
                 {
                     float x = Mathf.Lerp(-halfW, halfW, (float)rng.NextDouble());
-                    float y = -1.7f - (float)rng.NextDouble() * 1.6f;
+                    float y = -2.6f - (float)rng.NextDouble() * 2.2f;
                     SpawnWindow(p, x, y, baseOrder, rng);
                 }
 
