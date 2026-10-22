@@ -94,6 +94,18 @@ namespace TiantaiDash
         [Tooltip("漂浮广告牌用的素材")]
         public Sprite billboard;
 
+        [Header("屋顶生活（装饰 / NPC / 招牌）")]
+        [Tooltip("屋顶小物件：晾衣绳、空调、水桶、盆栽、桌子、猫")]
+        public Sprite[] roofProps;
+        [Tooltip("带文字的霓虹招牌")]
+        public Sprite[] roofSigns;
+        [Tooltip("NPC idle 帧（Biker）")]
+        public Sprite[] npcBiker;
+        [Tooltip("NPC idle 帧（Cyborg）")]
+        public Sprite[] npcCyborg;
+        [Tooltip("HUD 冲刺图标")]
+        public Sprite dashIcon;
+
         [Header("背景")]
         public Sprite sky;
         public Sprite bgFar;

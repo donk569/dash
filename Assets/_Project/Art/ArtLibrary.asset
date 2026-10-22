@@ -118,6 +118,30 @@ MonoBehaviour:
   meteorHead: {fileID: 21300000, guid: 717c66e344c9af34db41e9ca3770faca, type: 3}
   lightCone: {fileID: 21300000, guid: 7368ae5d1639b1b43bcc27c7a38beb26, type: 3}
   billboard: {fileID: 21300000, guid: 4e54d9d0e6491c24ba871300f53140e2, type: 3}
+  roofProps:
+  - {fileID: 21300000, guid: 77989b312553fe74690c1d9e7c49377f, type: 3}
+  - {fileID: 21300000, guid: 95f0b6b003ec3e94c9e2e03b38f9829f, type: 3}
+  - {fileID: 21300000, guid: b7dba974926770b4086b9dff85e1382f, type: 3}
+  - {fileID: 21300000, guid: 5174b4719a7b8004b919d784ee6bdb56, type: 3}
+  - {fileID: 21300000, guid: 236f1c2279e161a4fb5c0b73a5bccbc4, type: 3}
+  - {fileID: 21300000, guid: 6da0bc2940b1d3a42a1e88d766587646, type: 3}
+  roofSigns:
+  - {fileID: 21300000, guid: 8644ecce456793b48844adf032d62ffd, type: 3}
+  - {fileID: 21300000, guid: 3d6f21f5281af9b498f488ab3ee34608, type: 3}
+  - {fileID: 21300000, guid: eb07132f493018448a29c4f735cecf25, type: 3}
+  - {fileID: 21300000, guid: 7681fe75e1a154f48a5f22e1ff42ded0, type: 3}
+  - {fileID: 21300000, guid: fce5a575b64511a48b62e708582446b5, type: 3}
+  npcBiker:
+  - {fileID: 21300000, guid: dcf16df07792bd540a217c64d38193ae, type: 3}
+  - {fileID: 21300000, guid: 69cc35ac604ab384597cbc5a233a5ddd, type: 3}
+  - {fileID: 21300000, guid: 0923e1570ba00ef439073bc0f4ff6210, type: 3}
+  - {fileID: 21300000, guid: 68b15491659e40042892c8ab641c07fe, type: 3}
+  npcCyborg:
+  - {fileID: 21300000, guid: 43de042d4421381458180099ecf6fee0, type: 3}
+  - {fileID: 21300000, guid: 50c37baa54882bb4386d7307aa96b7e3, type: 3}
+  - {fileID: 21300000, guid: 513805a295775904eaa46ba3becee939, type: 3}
+  - {fileID: 21300000, guid: 23df67311e50d18458776ad33a9cee1c, type: 3}
+  dashIcon: {fileID: 21300000, guid: 7286e26b04d7741429e12f9a4099ed49, type: 3}
   sky: {fileID: 21300000, guid: 2a000380256f4b14cb0fd7d4a848c321, type: 3}
   bgFar: {fileID: 21300000, guid: 0a55465dce2360c48ac6f0dac4bf3327, type: 3}
   bgMid: {fileID: 21300000, guid: 16702bed311f7c8468fd4a024a5155af, type: 3}

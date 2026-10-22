@@ -139,6 +139,9 @@ namespace TiantaiDash
             if (flow == null) flow = gameObject.AddComponent<RunFlow>();
             if (playerHealth != null) flow.player = playerHealth.transform;
 
+            // 屋顶生活：给已有屋顶程序化加装饰和 NPC
+            if (GetComponent<RoofLife>() == null) gameObject.AddComponent<RoofLife>();
+
             if (killReward != null)
             {
                 killReward.dash = dashController;

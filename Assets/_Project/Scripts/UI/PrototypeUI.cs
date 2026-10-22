@@ -19,6 +19,7 @@ namespace TiantaiDash
         public DistanceTracker tracker;
         public KillReward killReward;
         ShopIcon[] _shops;
+        Sprite _dashIcon;
         public UpgradeManager upgrades;
         public DashController dash;
         public PlayerCombat combat;
@@ -480,6 +481,14 @@ namespace TiantaiDash
             p = Mathf.Clamp01(p);
 
             if (p > 0f) Fill(new Rect(x, y, Mathf.Max(1f, Mathf.Floor(barW * p)), barH), ready ? Cyan : CyanDim);
+
+            // 冲刺图标（新画的霓虹箭头）
+            if (_dashIcon == null && ArtLibrary.Instance != null) _dashIcon = ArtLibrary.Instance.dashIcon;
+            if (_dashIcon != null)
+            {
+                float icon = 22f;
+                DrawSprite(new Rect(x - icon - 6f, y + barH * 0.5f - icon * 0.5f, icon, icon), _dashIcon);
+            }
 
             string label = ready ? "中键 冲刺" : "冲刺 " + Mathf.CeilToInt(dash.ManualDashCooldownLeft) + "s";
             LabelShadow(new Rect(x + barW + 8f, y - 6f, 140f, 22f), label, _small, ready ? White : TextDim, 1);
