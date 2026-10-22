@@ -95,6 +95,13 @@ namespace TiantaiDash
             return IsDashing;
         }
 
+        /// <summary>提前结束冲刺（不触发冲击波）。蓄力起手时用来让位。</summary>
+        public void CancelDash()
+        {
+            if (!IsDashing) return;
+            EndDash(false);
+        }
+
         void EndDash(bool fireShockwave)
         {
             IsDashing = false;
@@ -105,7 +112,7 @@ namespace TiantaiDash
             if (OnDashEnded != null) OnDashEnded();
         }
 
-        /// <summary>冲刺撞击：撞到的怪直接吃 1 点伤害并被打飞，一冲一次。</summary>
+        /// <summary>冲刺撞击：撞到的怪**直接死亡**（无视血量），一冲一次。</summary>
         void RamEnemies()
         {
             Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position + Vector3.up * 1.2f,
@@ -122,9 +129,10 @@ namespace TiantaiDash
                 _rammedThisDash.Add(id);
                 RamCount++;
 
+                // 撞到即死：直接按当前血量结算，走正常的死亡流程（喷血 / 击杀奖励 / 音效）
                 EnemyHealth enemy = hits[i].GetComponentInParent<EnemyHealth>();
-                if (enemy != null) enemy.TakeDamage(1, true);
-                else target.TakeDamage(1);
+                if (enemy != null) enemy.TakeDamage(Mathf.Max(1, enemy.CurrentHealth), true);
+                else target.TakeDamage(9999);
 
                 CameraFollow.Shake(0.3f);
                 AudioManager.Play("sfx_hit", 1f, 0.9f);

@@ -88,6 +88,8 @@ namespace TiantaiDash
         bool _waitRelease;
         bool _fullPlayed;
         bool _releaseQueued;      // 锁存"松手"：一次性事件不能在拔刀延迟里被吞掉
+        bool _holdUntilLand;      // 蓄力中被跳跃打断：减速滑行保留到落地
+        float _holdReleaseAt;     // 兜底时间，防止一直没落地
         SkyEvents _sky;
 
         public Phase CurrentPhase => _phase;
@@ -125,12 +127,14 @@ namespace TiantaiDash
         {
             var gm = GameManager.Instance;
             if (gm != null) gm.OnStateChanged += HandleGameState;
+            if (jump != null) jump.OnLanded += HandleJumpLanded;
         }
 
         void OnDestroy()
         {
             var gm = GameManager.Instance;
             if (gm != null) gm.OnStateChanged -= HandleGameState;
+            if (jump != null) jump.OnLanded -= HandleJumpLanded;
         }
 
         /// <summary>由 <see cref="GameBootstrap"/> 注入（InputHandler 在 Game 上，不是 Player 的父级）。</summary>
@@ -166,6 +170,9 @@ namespace TiantaiDash
                 return;
             }
 
+            // 跳跃取消蓄力后保留的减速滑行：落地（或超时）就还回全速
+            if (_holdUntilLand && Time.time >= _holdReleaseAt) ReleaseJumpHold();
+
             switch (_phase)
             {
                 case Phase.Idle:
@@ -176,10 +183,13 @@ namespace TiantaiDash
                         break;
                     }
 
-                    if (input != null && input.AttackPressed && CanStart()) StartCharge();
+                    // 冲刺中按蓄力：先取消冲刺，再起手蓄力（用户要的"冲刺→蓄力"衔接）
+                    if (input != null && input.AttackPressed) TryStartCharge();
                     break;
 
                 case Phase.Charging:
+                    // 蓄力中按跳：取消蓄力、保留减速滑行，直接用这个速度跳过障碍
+                    if (input != null && input.JumpPressed) { CancelChargeForJump(); break; }
                     TickCharging();
                     break;
 
@@ -231,12 +241,20 @@ namespace TiantaiDash
             if (OnStageChanged != null) OnStageChanged(0);
         }
 
+        /// <summary>
+        /// 按下攻击键的统一入口：冲刺中先取消冲刺，再起手蓄力。
+        /// </summary>
+        void TryStartCharge()
+        {
+            if (dash != null && dash.IsDashing) dash.CancelDash();
+            if (CanStart()) StartCharge();
+        }
+
         void TickCharging()
         {
             // 松手是**一次性事件**，必须先锁存，否则拔刀延迟里的那一帧会被直接吞掉，
             // 表现为"点一下左键，1.2 秒后自己蹦出一刀"。这是之前长按蓄力失效的根因。
             if (input != null && input.AttackReleased) _releaseQueued = true;
-
             if (_delayLeft > 0f)
             {
                 _delayLeft -= Time.deltaTime;
@@ -373,7 +391,46 @@ namespace TiantaiDash
 
             if (sword != null && sword.IsBusy) sword.Cancel();
 
+            _holdUntilLand = false;
+
             if (OnCancelled != null) OnCancelled();
+        }
+
+        /// <summary>
+        /// 蓄力中被跳跃打断：取消本次蓄力（不出刀），
+        /// 但**保留蓄力的减速滑行**，落地才恢复全速 —— 这样"压缩力→慢速起跳"能稳定跳过障碍。
+        /// </summary>
+        void CancelChargeForJump()
+        {
+            _phase = Phase.Idle;
+            _charge = 0f;
+            _delayLeft = 0f;
+            CurrentStage = 0;
+            _waitRelease = true;          // 得先松开左键，才能再蓄下一次
+            _releaseQueued = false;
+
+            if (sword != null && sword.IsBusy) sword.Cancel();
+
+            var sky = Sky;
+            if (sky != null) sky.SetPaused(false);
+
+            _holdUntilLand = true;
+            _holdReleaseAt = Time.time + 1.2f;   // 兜底：万一这一跳没落地
+            if (runner != null) runner.SetHold(true, chargeMoveFactor);
+
+            if (OnCancelled != null) OnCancelled();
+        }
+
+        void HandleJumpLanded()
+        {
+            if (_holdUntilLand) ReleaseJumpHold();
+        }
+
+        void ReleaseJumpHold()
+        {
+            if (!_holdUntilLand) return;
+            _holdUntilLand = false;
+            if (runner != null) runner.SetHold(false);
         }
 
         // ---------------- 调试接口（MCP / 自动化测试用，鼠标输入无法脚本模拟） ----------------
@@ -381,6 +438,13 @@ namespace TiantaiDash
         public void DebugStartCharge()
         {
             if (_phase == Phase.Idle) StartCharge();
+        }
+
+        /// <summary>调试接口：等价于"这一帧按下攻击键"（鼠标输入无法脚本模拟）。</summary>
+        public void DebugPressAttack()
+        {
+            _waitRelease = false;
+            TryStartCharge();
         }
 
         /// <summary>把蓄力值直接设到某个比例（0~1），便于测各阶段伤害。</summary>
