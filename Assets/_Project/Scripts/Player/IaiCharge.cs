@@ -60,6 +60,12 @@ namespace TiantaiDash
         [Tooltip("蓄力中按跳的冷却（秒）。冷却期间按跳会被吞掉，蓄力继续，防止无限取消")]
         public float chargeJumpCooldown = 1.0f;
 
+        [Header("空中蓄力：飘一点")]
+        [Tooltip("在空中蓄力时的重力倍率（<1 = 下落更慢，0.55 是明显能感觉到的飘）")]
+        [Range(0.1f, 1f)] public float airChargeGravityScale = 0.55f;
+        [Tooltip("空中蓄力时的最大下落速度（世界单位/秒），防止越掉越快")]
+        public float airChargeMaxFallSpeed = 7f;
+
         [Header("三段参数")]
         public Stage[] stages =
         {
@@ -96,6 +102,9 @@ namespace TiantaiDash
         bool _holdUntilLand;      // 蓄力中被跳跃打断：减速滑行保留到落地
         float _holdReleaseAt;     // 兜底时间，防止一直没落地
         float _nextChargeJumpTime;
+        Rigidbody2D _rb;
+        bool _airGravityApplied;
+        float _baseGravityScale = 1f;
         SkyEvents _sky;
 
         /// <summary>蓄力跳是否可用（给 UI / 调试看）。</summary>
@@ -123,8 +132,45 @@ namespace TiantaiDash
             if (dash == null) dash = GetComponent<DashController>();
             if (combat == null) combat = GetComponent<PlayerCombat>();
             if (sword == null) sword = GetComponentInChildren<SwordSwing>();
+            _rb = GetComponent<Rigidbody2D>();
 
             SortStages();
+        }
+
+        void OnDisable()
+        {
+            // 任何中断（切场景 / 禁用组件）都要把重力还回去
+            if (_airGravityApplied && _rb != null) _rb.gravityScale = _baseGravityScale;
+            _airGravityApplied = false;
+        }
+
+        /// <summary>
+        /// 空中蓄力时把下落放慢：重力乘 airChargeGravityScale，并限制最大下落速度。
+        /// 每帧根据"是否在空中蓄力"统一开关，落地/出刀/取消都会自动恢复。
+        /// </summary>
+        void UpdateAirChargeGravity()
+        {
+            if (_rb == null) return;
+
+            // 只在下落（含顶点附近）时减速：上升段保持原重力，跳跃高度不变
+            bool airborneCharge = _phase == Phase.Charging
+                                  && jump != null && !jump.IsGrounded
+                                  && _rb.velocity.y <= 0.5f;
+
+            if (airborneCharge && !_airGravityApplied)
+            {
+                _baseGravityScale = _rb.gravityScale <= 0.0001f ? 1f : _rb.gravityScale;
+                _rb.gravityScale = _baseGravityScale * airChargeGravityScale;
+                _airGravityApplied = true;
+            }
+            else if (!airborneCharge && _airGravityApplied)
+            {
+                _rb.gravityScale = _baseGravityScale;
+                _airGravityApplied = false;
+            }
+
+            if (airborneCharge && _rb.velocity.y < -airChargeMaxFallSpeed)
+                _rb.velocity = new Vector2(_rb.velocity.x, -airChargeMaxFallSpeed);
         }
 
         void SortStages()
@@ -166,6 +212,8 @@ namespace TiantaiDash
 
         void Update()
         {
+            UpdateAirChargeGravity();
+
             var gm = GameManager.Instance;
             if (gm == null || !gm.IsPlaying)
             {
