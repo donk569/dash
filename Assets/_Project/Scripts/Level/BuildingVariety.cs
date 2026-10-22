@@ -11,7 +11,7 @@ namespace TiantaiDash
         public int seed = 7717;
         [Range(0f, 1f)] public float fireEscapeChance = 0.5f;
         [Range(0f, 1f)] public float pipeChance = 0.4f;
-        [Range(0f, 1f)] public float neonChance = 0.3f;
+        [Range(0f, 1f)] public float neonChance = 0f;   // 不要墙上的霓虹条
 
         void Start()
         {
@@ -23,6 +23,13 @@ namespace TiantaiDash
 
             var rng = new System.Random(seed);
             var pieces = FindObjectsOfType<PlatformPiece>();
+
+            // 场景里烘焙的霓虹横幅（Banner）也不要了
+            var all = FindObjectsOfType<Transform>(true);
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (all[i] != null && all[i].name == "Banner") all[i].gameObject.SetActive(false);
+            }
 
             for (int i = 0; i < pieces.Length; i++)
             {

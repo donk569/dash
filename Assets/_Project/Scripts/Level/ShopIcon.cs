@@ -91,6 +91,18 @@ namespace TiantaiDash
             }
 
             if (bestScore < float.MaxValue) transform.position = best;
+
+            // 子物体自带缩放/偏移，缩放到目标尺寸后按"实际渲染底边"对齐屋面，
+            // 否则店面会浮在屋顶上方（之前就是这样悬空的）
+            if (_sr != null)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    float gap = transform.position.y - _sr.bounds.min.y;
+                    if (Mathf.Abs(gap) < 0.02f) break;
+                    _sr.transform.position += new Vector3(0f, gap, 0f);
+                }
+            }
         }
 
         void Update()

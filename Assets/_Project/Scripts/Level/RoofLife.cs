@@ -14,7 +14,7 @@ namespace TiantaiDash
         public int seed = 20261022;
         [Range(0f, 1f)] public float emptyChance = 0.12f;
         [Range(0f, 1f)] public float windowPersonChance = 0.45f;
-        [Range(0f, 1f)] public float wallSignChance = 0.4f;
+        [Range(0f, 1f)] public float wallSignChance = 0f;   // 不要霓虹招牌
         [Range(0f, 1f)] public float roofPropChance = 0.6f;
         public float scale = 0.9f;
 
