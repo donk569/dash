@@ -100,6 +100,7 @@ namespace TiantaiDash
                 playerCombat.SetInput(input);
                 playerCombat.SetDash(dashController);
                 dashController.SetRunner(playerRunner);
+                dashController.SetInput(input);
             }
 
             // InputHandler 挂在 Game 上，不是 Player 的父级 —— 必须显式注入，

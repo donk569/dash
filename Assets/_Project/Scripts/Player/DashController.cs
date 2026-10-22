@@ -18,6 +18,13 @@ namespace TiantaiDash
 
         public PlayerRunner runner;
 
+        [Header("手动冲刺（鼠标中键）")]
+        [Tooltip("允许玩家用中键主动冲刺")]
+        public bool allowManualDash = true;
+        [Tooltip("中键冲刺冷却（秒）")]
+        public float manualCooldown = 5f;
+        public InputHandler input;
+
         [Header("撞击特效（留空用素材总表）")]
         public Sprite hitFx;
 
@@ -34,6 +41,14 @@ namespace TiantaiDash
 
         public float CurrentDuration => baseDuration * (1f + durationBonusPerLevel * DistanceLevel);
 
+        /// <summary>中键冲刺是否可用。</summary>
+        public bool ManualDashReady => Time.time >= _manualReadyAt;
+        /// <summary>中键冲刺剩余冷却（秒）。</summary>
+        public float ManualDashCooldownLeft => Mathf.Max(0f, _manualReadyAt - Time.time);
+        /// <summary>中键冲刺总冷却（UI 归一化用）。</summary>
+        public float ManualCooldown => Mathf.Max(0.01f, manualCooldown);
+        float _manualReadyAt;
+
         // 运行时统计（自测用，不影响玩法）
         public float LastDashPeakSpeed { get; private set; }
         public float LastDashDistance { get; private set; }
@@ -42,9 +57,27 @@ namespace TiantaiDash
         Rigidbody2D _rb;
 
         public void SetRunner(PlayerRunner playerRunner) { runner = playerRunner; }
+        public void SetInput(InputHandler handler) { input = handler; }
+
+        /// <summary>中键主动冲刺：冷却好了、没在冲、游戏在跑才允许。返回 true 表示冲出去了。</summary>
+        public bool TryManualDash()
+        {
+            if (!allowManualDash || IsDashing || !ManualDashReady) return false;
+
+            var gm = GameManager.Instance;
+            if (gm != null && !gm.IsPlaying) return false;
+
+            _manualReadyAt = Time.time + ManualCooldown;
+            TriggerDash();
+            return true;
+        }
 
         void Update()
         {
+            // 中键主动冲刺：冷却好了、没在冲、游戏在跑才允许
+            if (input == null) input = FindObjectOfType<InputHandler>();
+            if (input != null && input.DashPressed) TryManualDash();
+
             if (!IsDashing) return;
 
             var gm = GameManager.Instance;
@@ -179,6 +212,7 @@ namespace TiantaiDash
             DistanceLevel = 0;
             ShockwaveUnlocked = false;
             DashCount = 0;
+            _manualReadyAt = 0f;
             if (runner != null) runner.SetDashActive(false, speedMultiplier);
         }
     }

@@ -26,6 +26,9 @@ namespace TiantaiDash
         public bool ConfirmPressed { get; private set; }
         public int SelectUpgradeIndex { get; private set; } = -1;
 
+        /// <summary>冲刺键（鼠标中键）这一帧按下。</summary>
+        public bool DashPressed { get; private set; }
+
         /// <summary>
         /// 取走这一帧的"按下跳跃"。同一帧只允许一个系统消费，
         /// 这样"蓄力跳带冷却"就能把冷却期内的跳真正吞掉，而不是两个系统各跳一次。
@@ -58,8 +61,11 @@ namespace TiantaiDash
                            && Input.GetKeyDown(KeyCode.Escape)
                            && (gm.CurrentState == GameState.Playing || gm.CurrentState == GameState.Paused);
 
-            RestartPressed = Input.GetKeyDown(KeyCode.R);
+            RestartPressed = Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.R);
             ConfirmPressed = Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
+
+            // 冲刺：鼠标中键（单独一条线，和跳跃/攻击都不冲突）
+            DashPressed = playing && Input.GetMouseButtonDown(2);
 
             SelectUpgradeIndex = -1;
             if (Input.GetKeyDown(KeyCode.Alpha1)) SelectUpgradeIndex = 0;

@@ -18899,6 +18899,10 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2994170354942925625, guid: bf05236102a8100449dcc89012bbfa06, type: 3}
+      propertyPath: coyoteTime
+      value: 0.15
+      objectReference: {fileID: 0}
     - target: {fileID: 3343638194739062405, guid: bf05236102a8100449dcc89012bbfa06, type: 3}
       propertyPath: m_Name
       value: Player

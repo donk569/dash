@@ -207,7 +207,7 @@ namespace TiantaiDash
             {
                 case GameState.UpgradeSelecting: DrawUpgradeSelect(gm, vw); break;
                 case GameState.ShopOpen: DrawShop(gm, vw); break;
-                case GameState.Paused: DrawPanel(vw, "已暂停", "Esc 继续      R 重开本关", Cyan); break;
+                case GameState.Paused: DrawPanel(vw, "已暂停", "Esc 继续      右键 重开本关", Cyan); break;
                 case GameState.Failed: DrawFailed(gm, vw); break;
                 case GameState.Completed: DrawCompleted(gm, vw); break;
             }
@@ -335,6 +335,9 @@ namespace TiantaiDash
 
         void DrawHud(GameManager gm, float vw)
         {
+            // ---- 顶部中间：中键冲刺冷却条 ----
+            DrawDashCooldownBar(vw);
+
             // ---- 生命：像素心形 ----
             if (health != null && heart != null)
             {
@@ -391,7 +394,7 @@ namespace TiantaiDash
             // ---- 底部操作提示：只在真正能操作时显示 ----
             if (gm.CurrentState != GameState.Playing) return;
 
-            string hint = "左键 拔刀蓄力    右键 跳跃    Esc 暂停    R 重开";
+            string hint = "左键 拔刀蓄力    右键 跳跃    中键 冲刺    Esc 暂停";
             float hy = VirtualHeight - 42f;
             Fill(new Rect(20f, hy + 7f, 6f, 6f), CyanDim);
             LabelShadow(new Rect(32f, hy, vw - 60f, 24f), hint, _small, TextDim, 1);
@@ -400,6 +403,28 @@ namespace TiantaiDash
             {
                 LabelShadow(new Rect(vw - 200f, hy - 4f, 180f, 28f), "冲刺中", _hudTextR, Yellow);
             }
+        }
+
+        /// <summary>顶部中间的冲刺冷却条：满了才亮，冷却中显示剩余秒数。</summary>
+        void DrawDashCooldownBar(float vw)
+        {
+            if (dash == null || !dash.allowManualDash) return;
+
+            const float barW = 170f;
+            const float barH = 9f;
+            float x = Mathf.Round((vw - barW) * 0.5f);
+            float y = 18f;
+
+            Fill(new Rect(x - 2f, y - 2f, barW + 4f, barH + 4f), new Color(0f, 0f, 0f, 0.55f));
+
+            bool ready = dash.ManualDashReady;
+            float p = ready ? 1f : 1f - dash.ManualDashCooldownLeft / dash.ManualCooldown;
+            p = Mathf.Clamp01(p);
+
+            if (p > 0f) Fill(new Rect(x, y, Mathf.Max(1f, Mathf.Floor(barW * p)), barH), ready ? Cyan : CyanDim);
+
+            string label = ready ? "中键 冲刺" : "冲刺 " + Mathf.CeilToInt(dash.ManualDashCooldownLeft) + "s";
+            LabelShadow(new Rect(x, y + barH + 3f, barW, 20f), label, _center, ready ? White : TextDim, 1);
         }
 
         /// <summary>
@@ -649,7 +674,7 @@ namespace TiantaiDash
         void DrawFailed(GameManager gm, float vw)
         {
             string reason = (health != null && health.CurrentHealth <= 0) ? "生命归零" : "掉落屋顶";
-            DrawPanel(vw, "失败", "R 重开", new Color32(255, 77, 109, 255), reason);
+            DrawPanel(vw, "失败", "右键 重开", new Color32(255, 77, 109, 255), reason);
         }
 
         void DrawCompleted(GameManager gm, float vw)
@@ -688,7 +713,7 @@ namespace TiantaiDash
 
             Fill(new Rect(panel.x + 24f, panel.y + 130f, panel.width - 48f, 1f), CyanDim);
 
-            LabelShadow(new Rect(panel.x, panel.y + 146f, panel.width, 26f), "R 重开      Enter 下一关（首版仅一关）", _center, TextDim);
+            LabelShadow(new Rect(panel.x, panel.y + 146f, panel.width, 26f), "右键 重开      Enter 下一关（首版仅一关）", _center, TextDim);
         }
 
         void DrawPanel(float vw, string title, string hint, Color accent, string sub = null)

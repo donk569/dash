@@ -9,7 +9,10 @@ namespace TiantaiDash
     {
         public float jumpVelocity = 15.7f;
         public float secondJumpVelocity = 14f;
-        public float coyoteTime = 0.1f;
+        [Tooltip("土狼时间：离开地面后还能起跳的宽限（秒）。跑酷速度下 0.12~0.15 手感最好")]
+        public float coyoteTime = 0.15f;
+        [Tooltip("跳跃缓冲：落地前提前按跳，落地瞬间自动起跳（秒）")]
+        public float jumpBufferTime = 0.12f;
         public int extraJumps;
 
         [SerializeField] InputHandler input;
@@ -35,6 +38,7 @@ namespace TiantaiDash
         int _airJumpsLeft;
         bool _wasGrounded;
         bool _groundedOnce;
+        float _jumpBufferedUntil = -99f;
 
         public bool IsGrounded { get; private set; }
 
@@ -63,6 +67,14 @@ namespace TiantaiDash
 
             GroundCheck();
 
+            // 跳跃缓冲：落地那一刻把之前按下的跳兑现（马里奥式"落地自动跳"）
+            if (IsGrounded && _jumpBufferedUntil > Time.time)
+            {
+                _jumpBufferedUntil = -99f;
+                RequestJump();
+                return;
+            }
+
             // 冲刺结束就还回这一次机会
             if (_dash == null || !_dash.IsDashing) _dashJumpUsed = false;
 
@@ -72,7 +84,8 @@ namespace TiantaiDash
             // 否则冷却期内的跳会被这个脚本照常执行，等于冷却失效。
             if (_iai != null && _iai.IsChargePhase) return;
 
-            if (input.ConsumeJump()) RequestJump();
+            if (input.ConsumeJump())
+                _jumpBufferedUntil = RequestJump() ? -99f : Time.time + jumpBufferTime;
         }
 
         public void SetInput(InputHandler handler) { input = handler; }
@@ -107,7 +120,8 @@ namespace TiantaiDash
             }
         }
 
-        public void RequestJump()
+        /// <summary>尝试起跳；返回 true 表示这次真的跳了（土狼 / 二段 / 冲刺跳任一成功）。</summary>
+        public bool RequestJump()
         {
             if (Time.time - _lastGroundedTime <= coyoteTime)
             {
@@ -117,15 +131,19 @@ namespace TiantaiDash
                 _airJumpsLeft = extraJumps;
                 AudioManager.Play("sfx_jump", 0.8f, UnityEngine.Random.Range(0.96f, 1.06f));
                 OnJumped?.Invoke();
+                return true;
             }
-            else if (_airJumpsLeft > 0)
+
+            if (_airJumpsLeft > 0)
             {
                 _airJumpsLeft--;
                 _rb.velocity = new Vector2(_rb.velocity.x, secondJumpVelocity);
                 AudioManager.Play("sfx_jump", 0.7f, UnityEngine.Random.Range(1.12f, 1.22f));
                 OnJumped?.Invoke();
+                return true;
             }
-            else if (allowDashJump && _dash != null && _dash.IsDashing && !_dashJumpUsed)
+
+            if (allowDashJump && _dash != null && _dash.IsDashing && !_dashJumpUsed)
             {
                 // 冲刺跳：只补竖直速度，**不动冲刺状态和水平倍率**，
                 // 所以不会出现"跳一下就断掉冲刺、然后贴着坑壁往下掉"的情况。
@@ -134,7 +152,10 @@ namespace TiantaiDash
                 _rb.velocity = new Vector2(_rb.velocity.x, vy);
                 AudioManager.Play("sfx_jump", 0.8f, UnityEngine.Random.Range(1.0f, 1.1f));
                 OnJumped?.Invoke();
+                return true;
             }
+
+            return false;
         }
 
         /// <summary>
@@ -163,6 +184,7 @@ namespace TiantaiDash
             _lastLandFxTime = -99f;
             _dashJumpUsed = false;
             _airJumpsLeft = extraJumps;
+            _jumpBufferedUntil = -99f;
         }
     }
 }
