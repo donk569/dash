@@ -116,6 +116,12 @@ namespace TiantaiDash
         public Sprite fireEscape;
         public Sprite pipes;
         public Sprite neonStrip;
+        [Tooltip("悬浮平台用的警示条纹金属台面")]
+        public Sprite slabHazard;
+        [Tooltip("背景星星")]
+        public Sprite starSprite;
+        [Tooltip("烟花粒子")]
+        public Sprite sparkSprite;
 
         [Header("背景")]
         public Sprite sky;

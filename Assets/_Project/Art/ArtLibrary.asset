@@ -164,6 +164,9 @@ MonoBehaviour:
   fireEscape: {fileID: 21300000, guid: 1796847ccd43ddc4dabadf44bbcbc242, type: 3}
   pipes: {fileID: 21300000, guid: 7d3df51712878714b800ff9a6f13db22, type: 3}
   neonStrip: {fileID: 21300000, guid: 91b8f6999de66cc45afdcd1f73b5d16a, type: 3}
+  slabHazard: {fileID: 21300000, guid: 467615b4f9149bb4a9886ac366119955, type: 3}
+  starSprite: {fileID: 21300000, guid: 1879554a21e3d284b86d555d9b5bc328, type: 3}
+  sparkSprite: {fileID: 21300000, guid: 7ed236eda145f67478448a557100dc0c, type: 3}
   sky: {fileID: 21300000, guid: 2a000380256f4b14cb0fd7d4a848c321, type: 3}
   bgFar: {fileID: 21300000, guid: 0a55465dce2360c48ac6f0dac4bf3327, type: 3}
   bgMid: {fileID: 21300000, guid: 16702bed311f7c8468fd4a024a5155af, type: 3}

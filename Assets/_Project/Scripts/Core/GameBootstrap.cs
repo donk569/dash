@@ -145,6 +145,9 @@ namespace TiantaiDash
             // 楼体立面变体 + 消防梯/管道/霓虹条
             if (GetComponent<BuildingVariety>() == null) gameObject.AddComponent<BuildingVariety>();
 
+            // 星星 + 烟花
+            if (GetComponent<SkyLife>() == null) gameObject.AddComponent<SkyLife>();
+
             if (killReward != null)
             {
                 killReward.dash = dashController;

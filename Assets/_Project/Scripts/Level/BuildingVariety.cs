@@ -36,12 +36,22 @@ namespace TiantaiDash
                     p.Apply();
                 }
 
-                Sprite wall = walls[rng.Next(walls.Length)];
-                if (wall != null) p.body.sprite = wall;
+                // 悬浮平台：换成警示条纹金属台面（参考图那种）
+                if (p.isFloating && art.slabHazard != null && p.slab != null)
+                {
+                    p.slab.sprite = art.slabHazard;
+                    p.slab.drawMode = SpriteDrawMode.Tiled;
+                    p.slab.tileMode = SpriteTileMode.Continuous;
+                }
+                else
+                {
+                    Sprite wall = walls[rng.Next(walls.Length)];
+                    if (wall != null) p.body.sprite = wall;
 
-                // 一点点色偏：同一张贴图也能拉开冷暖层次
-                float t = 0.82f + (float)rng.NextDouble() * 0.36f;
-                p.body.color = new Color(t * 0.94f, t, t * 1.06f, 1f);
+                    // 一点点色偏：同一张贴图也能拉开冷暖层次
+                    float t = 0.82f + (float)rng.NextDouble() * 0.36f;
+                    p.body.color = new Color(t * 0.94f, t, t * 1.06f, 1f);
+                }
 
                 int order = p.body.sortingOrder;
                 float halfW = p.width * 0.5f;
