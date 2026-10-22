@@ -14,8 +14,14 @@ namespace TiantaiDash
         public int price = 3;
 
         [Header("外观")]
-        [Tooltip("目标世界缩放：让整个店面在场景里约等于这个倍数（1 = 原图尺寸 3x4 世界单位）")]
-        public float visualScale = 0.55f;
+        [Tooltip("保留编辑器里的尺寸与位置，运行时不再缩放/移动")]
+        public bool keepEditorTransform = true;
+
+        [Header("圆形检测范围")]
+        [Tooltip("玩家进入这个半径就自动进店（世界单位）")]
+        public float detectRadius = 6f;
+        [Tooltip("圆心相对商店的偏移（一般抬到店面中部）")]
+        public Vector2 detectOffset = new Vector2(0f, 1.2f);
 
         [Header("浮动")]
         public float bobAmplitude = 0.18f;
@@ -24,8 +30,6 @@ namespace TiantaiDash
         Vector3 _base;
         float _openX;
         Transform _player;
-        Collider2D _playerCol;
-        BoxCollider2D _col;
         bool _opened;
         SpriteRenderer _sr;
 
@@ -42,14 +46,12 @@ namespace TiantaiDash
             // 招牌要压在角色(20)、场景建筑之上，不然会被楼挡掉
             if (_sr != null) _sr.sortingOrder = 25;
 
-            // 店面缩小：子物体自带缩放，所以按"当前世界缩放"归一化到 visualScale，避免叠乘
-            if (_sr != null)
+            // 尺寸/位置完全保留编辑器里的样子
+            if (!keepEditorTransform)
             {
-                float cur = _sr.transform.lossyScale.x;
-                if (cur > 0.0001f)
-                    _sr.transform.localScale *= Mathf.Max(0.05f, visualScale) / cur;
+                SnapToRoof();
             }
-            SnapToRoof();
+
             bobAmplitude = 0f;   // 站在屋面上，不上下浮动
             _base = transform.position;
             _openX = transform.position.x;
@@ -57,14 +59,15 @@ namespace TiantaiDash
             var hp = FindObjectOfType<PlayerHealth>();
             if (hp != null) _player = hp.transform;
 
-            var col = GetComponent<BoxCollider2D>();
-            if (col != null)
-            {
-                col.isTrigger = true;
-                col.size = new Vector2(1.6f, 2.6f);
-                col.offset = new Vector2(0f, 1.3f);
-                _col = col;
-            }
+            // 圆形检测范围（触发用），碰撞体本身不再当判定依据
+            var box = GetComponent<BoxCollider2D>();
+            if (box != null) box.enabled = false;
+
+            var circle = GetComponent<CircleCollider2D>();
+            if (circle == null) circle = gameObject.AddComponent<CircleCollider2D>();
+            circle.isTrigger = true;
+            circle.radius = Mathf.Max(0.5f, detectRadius);
+            circle.offset = detectOffset;
         }
 
         /// <summary>向下（必要时左右）找屋面，把店面底部贴上去。找不到就不动。</summary>
@@ -131,13 +134,18 @@ namespace TiantaiDash
             if (TouchingPlayer()) OpenShop();
         }
 
+        /// <summary>玩家是否进入圆形检测范围（圆心 = 商店位置 + detectOffset）。</summary>
         bool TouchingPlayer()
         {
-            if (_col == null) _col = GetComponentInChildren<BoxCollider2D>();
-            if (_col == null || _player == null) return false;
-            if (_playerCol == null) _playerCol = _player.GetComponentInChildren<Collider2D>();
-            if (_playerCol == null) return false;
-            return _col.bounds.Intersects(_playerCol.bounds);
+            if (_player == null) return false;
+            Vector2 center = (Vector2)transform.position + detectOffset;
+            return Vector2.Distance(_player.position, center) <= detectRadius;
+        }
+
+        void OnDrawGizmosSelected()
+        {
+            Gizmos.color = new Color(1f, 0.84f, 0.4f, 0.5f);
+            Gizmos.DrawWireSphere((Vector2)transform.position + detectOffset, detectRadius);
         }
 
         void OpenShop()
