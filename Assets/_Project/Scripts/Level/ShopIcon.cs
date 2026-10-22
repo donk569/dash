@@ -64,13 +64,33 @@ namespace TiantaiDash
             }
         }
 
-        /// <summary>向下找屋面，把店面底部贴上去。</summary>
+        /// <summary>向下（必要时左右）找屋面，把店面底部贴上去。找不到就不动。</summary>
         void SnapToRoof()
         {
-            Vector2 origin = new Vector2(transform.position.x, transform.position.y + 2f);
-            RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, 8f, GameLayers.GroundMask);
-            if (hit.collider == null) return;
-            transform.position = new Vector3(transform.position.x, hit.point.y + 0.02f, transform.position.z);
+            float bestScore = float.MaxValue;
+            Vector3 best = transform.position;
+
+            for (float dx = 0f; dx <= 8f; dx += 1f)
+            {
+                int tries = dx <= 0f ? 1 : 2;
+                for (int s = 0; s < tries; s++)
+                {
+                    float x = transform.position.x + (s == 0 ? dx : -dx);
+                    RaycastHit2D hit = Physics2D.Raycast(
+                        new Vector2(x, transform.position.y + 6f), Vector2.down,
+                        26f, GameLayers.GroundMask);
+                    if (hit.collider == null) continue;
+
+                    float score = Mathf.Abs(x - transform.position.x)
+                                + Mathf.Abs(hit.point.y - transform.position.y) * 0.3f;
+                    if (score >= bestScore) continue;
+
+                    bestScore = score;
+                    best = new Vector3(x, hit.point.y + 0.02f, transform.position.z);
+                }
+            }
+
+            if (bestScore < float.MaxValue) transform.position = best;
         }
 
         void Update()

@@ -129,6 +129,10 @@ namespace TiantaiDash
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = sprite;
             sr.sortingOrder = (p.slab != null ? p.slab.sortingOrder : 0) + 2;
+
+            // 猫会跑：玩家靠近就窜走
+            if (sprite.name.StartsWith("prop_cat"))
+                go.AddComponent<CatFlee>();
         }
     }
 }

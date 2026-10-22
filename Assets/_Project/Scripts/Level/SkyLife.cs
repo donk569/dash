@@ -9,7 +9,8 @@ namespace TiantaiDash
     public class SkyLife : MonoBehaviour
     {
         [Header("星星")]
-        public int starCount = 110;
+        [Tooltip("额外撒的星星数量；天空贴图本身已带星点，所以默认 0（多了会像噪点）")]
+        public int starCount = 0;
         public float minX = 0f;
         public float maxX = 1750f;
         public float minY = 10f;
@@ -34,7 +35,7 @@ namespace TiantaiDash
                 _spark = art.sparkSprite;
             }
 
-            if (_star != null) BuildStars();
+            if (_star != null && starCount > 0) BuildStars();
             _nextFirework = Time.time + Random.Range(2f, 5f);
         }
 
