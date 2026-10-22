@@ -41,6 +41,11 @@ namespace TiantaiDash
             new SfxClip { id = "sfx_hurt" },
             new SfxClip { id = "sfx_select" },
             new SfxClip { id = "sfx_portal" },
+            // 居合拔刀斩专属
+            new SfxClip { id = "sfx_iai_draw" },
+            new SfxClip { id = "sfx_iai_charge" },
+            new SfxClip { id = "sfx_iai_full" },
+            new SfxClip { id = "sfx_iai_slash" },
         };
 
         AudioSource[] _sources;

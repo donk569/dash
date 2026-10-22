@@ -106,7 +106,8 @@ namespace TiantaiDash
 
             if (falling && above && _health != null && _health.IsAlive)
             {
-                _health.TakeDamage(1);
+                // 踩踏也是玩家造成的击杀 → 标来源，才会触发击杀冲刺奖励
+                _health.TakeDamage(1, true);
                 if (rb != null) rb.velocity = new Vector2(rb.velocity.x, stompBounce);
 
                 AudioManager.Play("sfx_hit", 0.85f, 1.15f);

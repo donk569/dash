@@ -19,6 +19,8 @@ namespace TiantaiDash
         public Sprite[] playerLand;
         public Sprite[] playerShoot;
         public Sprite[] playerHurt;
+        [Tooltip("居合拔刀蓄力的姿势帧（留空回退 idle）")]
+        public Sprite[] playerCharge;
 
         [Header("敌人")]
         public Sprite[] droneFrames;
@@ -55,11 +57,35 @@ namespace TiantaiDash
         public Sprite uiDigits;
         [Tooltip("2x2 扫描线，用于全屏遮罩")]
         public Sprite uiScanline;
+        [Tooltip("蓄力条凹槽（96x10）")]
+        public Sprite uiChargeFrame;
+        [Tooltip("蓄力条发光填充（96x6）")]
+        public Sprite uiChargeFill;
 
         [Header("战斗 / 拾取")]
         public Sprite sword;
+        [Tooltip("刀鞘（与 prop_sword 同尺寸同 pivot，直接套在收刀姿态上）")]
+        public Sprite sheath;
         public Sprite coin;
         public Sprite shopIcon;
+
+        [Header("居合表现")]
+        [Tooltip("刀光条：拉长的渐变刃形，用作残影贴图")]
+        public Sprite slashArc;
+        [Tooltip("新月弧光：奥义时额外叠的弧光")]
+        public Sprite slashCrescent;
+        [Tooltip("横向居合刃光：横斩的视觉主体，横贯整个攻击范围")]
+        public Sprite iaiHorizontal;
+        [Tooltip("蓄力能量环（3 帧循环）")]
+        public Sprite[] chargeRing;
+        [Tooltip("奥义释放的十字闪光")]
+        public Sprite iaiFlash;
+
+        [Header("血")]
+        [Tooltip("血滴（多种大小）")]
+        public Sprite[] bloodFrames;
+        [Tooltip("血雾（击杀时散开）")]
+        public Sprite bloodMist;
 
         [Header("背景动画")]
         public Sprite moonGlow;

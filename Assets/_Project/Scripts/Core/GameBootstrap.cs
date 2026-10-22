@@ -102,6 +102,10 @@ namespace TiantaiDash
                 dashController.SetRunner(playerRunner);
             }
 
+            // InputHandler 挂在 Game 上，不是 Player 的父级 —— 必须显式注入，
+            // 否则 IaiCharge 的 GetComponentInParent 会拿到 null，左键蓄力整个不响应。
+            if (iaiCharge != null && input != null) iaiCharge.SetInput(input);
+
             if (tracker != null && playerHealth != null)
             {
                 tracker.player = playerHealth.transform;

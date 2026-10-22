@@ -34,7 +34,8 @@ namespace TiantaiDash.EditorTools
             importer.maxTextureSize = 2048;
 
             bool isPlayer = path.Contains("/Sprites/Player/");
-            bool isSword = path.Contains("prop_sword");   // 剑要以剑柄为轴旋转
+            // 剑和鞘要以握把为轴旋转，两者 pivot 必须完全一致，鞘才能精确套在刃上
+            bool isSword = path.Contains("prop_sword") || path.Contains("prop_sheath");
 
             var settings = new TextureImporterSettings();
             importer.ReadTextureSettings(settings);

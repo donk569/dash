@@ -5,34 +5,50 @@ namespace TiantaiDash
     /// <summary>
     /// 击杀奖励：玩家每杀死一个敌人，自动向前冲刺一次。
     ///
-    /// 三条规则（都为了"稳"）：
-    /// 1. **只认玩家击杀**：订阅 <see cref="EnemyHealth.OnKilledByPlayer"/>，
-    ///    环境伤害 / 敌人互殴不会触发；
-    /// 2. **合并**：同一次攻击的连杀（默认 0.2s 内）只给一次冲刺，
-    ///    否则一刀三杀会连冲三次、直接穿过半个关卡；
-    /// 3. **不打断**：等斩击收尾动作播完再冲；如果已经在冲刺，
-    ///    直接丢弃这次奖励（`TriggerDash` 本身也不会重置计时器）。
+    /// 规则（都为"爽"和"稳"服务）：
+    /// 1. **只认玩家击杀**：订阅 <see cref="EnemyHealth.OnKilledByPlayer"/>；
+    /// 2. **按"刀"合并**：同一次挥砍（<see cref="PlayerCombat.AttackCount"/> 不变）里的连杀
+    ///    只给一次冲刺。用刀号而不是纯时间窗，才能既"一刀三杀只冲一次"又"立刻冲"；
+    /// 3. **立刻冲**：不等收刀播完，斩击会把动作自己演完（冲刺只接管移动），
+    ///    这样"冲刺 → 撞死 → 再冲"才连得起来；
+    /// 4. **冲刺中又击杀 → 记 1 次待补**：当前冲刺结束后补一次（最多 1 次）。
     /// </summary>
     public class KillReward : MonoBehaviour
     {
-        [Tooltip("同一次连杀合并窗口（秒）")]
-        public float mergeWindow = 0.2f;
+        [Tooltip("同一刀内连杀的兜底合并窗口（秒）；主要靠刀号判定，这里只是给冲刺撞击兜底")]
+        public float mergeWindow = 0.25f;
+        [Tooltip("冲刺过程中又击杀时，允许在当前冲刺结束后补冲的次数上限")]
+        public int queuedDashLimit = 1;
+
+        [Header("击杀手感")]
+        [Tooltip("击杀瞬间的顿帧时长（0 = 不顿）")]
+        public float hitStop = 0.07f;
+        [Tooltip("击杀瞬间的时间倍率")]
+        [Range(0.01f, 0.5f)] public float hitStopScale = 0.12f;
+        [Tooltip("击杀瞬间的震屏强度")]
+        public float killShake = 0.25f;
 
         [Header("引用（留空自动找）")]
         public DashController dash;
         public IaiCharge iai;
+        public PlayerCombat combat;
 
         public int KillCount { get; private set; }
         public int DashCount { get; private set; }
+        /// <summary>因为奖励没兑现而补冲的次数（调试用）。</summary>
+        public int QueuedDashCount { get; private set; }
 
         EnemyHealth[] _enemies;
-        float _windowStart = -99f;
+        int _lastRewardSwing = -1;
+        float _lastRewardTime = -99f;
         bool _pending;
+        int _queued;
 
         void Awake()
         {
             if (dash == null) dash = FindObjectOfType<DashController>();
             if (iai == null) iai = FindObjectOfType<IaiCharge>();
+            if (combat == null) combat = FindObjectOfType<PlayerCombat>();
         }
 
         void Start()
@@ -64,31 +80,63 @@ namespace TiantaiDash
         {
             KillCount++;
 
-            // 已在合并窗口内 → 只算击杀数，不重复开窗口
-            if (Time.unscaledTime - _windowStart < mergeWindow) return;
+            int swing = combat != null ? combat.AttackCount : -1;
+            bool sameSwing = swing == _lastRewardSwing
+                             && (Time.unscaledTime - _lastRewardTime) < mergeWindow;
 
-            _windowStart = Time.unscaledTime;
+            // 击杀瞬间的"重"：顿帧 + 轻微慢镜 + 震屏（同一刀的后续连杀不再重复）
+            if (!sameSwing)
+            {
+                if (hitStop > 0f) TimeJuice.HitStop(hitStop, hitStopScale);
+                if (killShake > 0f) CameraFollow.Shake(killShake);
+            }
+
+            // 同一刀里的第二个及以后的击杀 → 只算人头，不再给冲刺
+            if (sameSwing) return;
+
+            _lastRewardSwing = swing;
+            _lastRewardTime = Time.unscaledTime;
             _pending = true;
         }
 
         void Update()
         {
-            if (!_pending) return;
-            if (dash == null) { _pending = false; return; }
-
             var gm = GameManager.Instance;
-            if (gm == null || !gm.IsPlaying) { _pending = false; return; }
+            if (gm == null || !gm.IsPlaying)
+            {
+                // 失败 / 通关 / 暂停：奖励作废
+                _pending = false;
+                _queued = 0;
+                return;
+            }
 
-            // 等合并窗口结束，把连杀算成一次
-            if (Time.unscaledTime - _windowStart < mergeWindow) return;
+            if (dash == null)
+            {
+                _pending = false;
+                _queued = 0;
+                return;
+            }
 
-            // 斩击还在播（下劈 + 收刀）→ 等它播完再冲，别打断动作
-            if (iai != null && iai.IsAttacking) return;
+            if (_pending)
+            {
+                _pending = false;
 
-            // 已经在冲 → 这次奖励作废，绝不重置计时器
-            if (dash.IsDashing) { _pending = false; return; }
+                // 已经在冲 → 不打断当前冲刺，改成"排队补一次"
+                if (dash.IsDashing)
+                {
+                    if (_queued < queuedDashLimit) _queued++;
+                    return;
+                }
 
-            _pending = false;
+                if (dash.RequestKillDash()) DashCount++;
+                return;
+            }
+
+            // 补冲：当前冲刺真的结束了才补，不叠加速度、不重置计时器
+            if (_queued <= 0 || dash.IsDashing) return;
+
+            _queued--;
+            QueuedDashCount++;
             if (dash.RequestKillDash()) DashCount++;
         }
 
@@ -96,9 +144,12 @@ namespace TiantaiDash
         public void ResetState()
         {
             _pending = false;
-            _windowStart = -99f;
+            _queued = 0;
+            _lastRewardSwing = -1;
+            _lastRewardTime = -99f;
             KillCount = 0;
             DashCount = 0;
+            QueuedDashCount = 0;
         }
     }
 }

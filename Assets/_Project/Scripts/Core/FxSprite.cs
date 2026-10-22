@@ -10,6 +10,10 @@ namespace TiantaiDash
         public float drag = 2.5f;
         public float gravity;
         public bool shrink = true;
+        [Tooltip("每秒放大比例（>0 边淡出边铺开，刀光用）")]
+        public float grow;
+        [Tooltip("每秒自转角度")]
+        public float spin;
 
         SpriteRenderer _sr;
         Color _base;
@@ -55,7 +59,17 @@ namespace TiantaiDash
             c.a = _base.a * (1f - k);
             if (_sr != null) _sr.color = c;
 
-            if (shrink) transform.localScale = Vector3.one * (_scale * (1f - 0.4f * k));
+            if (spin != 0f) transform.Rotate(0f, 0f, spin * Time.deltaTime);
+
+            if (grow != 0f)
+            {
+                float g = _scale * (1f + grow * k);
+                transform.localScale = new Vector3(g, g, 1f);
+            }
+            else if (shrink)
+            {
+                transform.localScale = Vector3.one * (_scale * (1f - 0.4f * k));
+            }
         }
     }
 }

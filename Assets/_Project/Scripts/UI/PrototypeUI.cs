@@ -49,6 +49,9 @@ namespace TiantaiDash
         public Sprite coinSprite;
         public Sprite digitSheet;
         public Sprite scanline;
+        [Tooltip("蓄力条凹槽 / 发光填充（留空用素材总表）")]
+        public Sprite uiChargeFrame;
+        public Sprite uiChargeFill;
 
         // 位图字体参数，必须和 _AssetInbox/gen_pixel_ui.py 一致
         const int DigitW = 6;
@@ -400,8 +403,9 @@ namespace TiantaiDash
         }
 
         /// <summary>
-        /// 居合蓄力条：钉在玩家头顶（世界坐标投影到虚拟 GUI 坐标），
-        /// 三段配色 + 阶段刻度 + 满蓄闪烁。只在蓄力中显示。
+        /// 居合蓄力条：很小的一条（96x10 虚拟像素），钉在玩家头顶。
+        /// 三段用配色区分（青 → 黄 → 紫），刻度线标阈值，满蓄整条闪白。
+        /// 不再画外框面板和阶段大字——之前那版在 1080p 下太占地方。
         /// </summary>
         void DrawChargeBar()
         {
@@ -410,7 +414,7 @@ namespace TiantaiDash
             Camera cam = Camera.main;
             if (cam == null) return;
 
-            Vector3 sp = cam.WorldToScreenPoint(iai.transform.position + Vector3.up * 2.35f);
+            Vector3 sp = cam.WorldToScreenPoint(iai.transform.position + Vector3.up * 2.05f);
             if (sp.z <= 0f) return;
 
             float scale = Screen.height / VirtualHeight;
@@ -419,53 +423,71 @@ namespace TiantaiDash
             float cx = sp.x / scale;
             float cy = VirtualHeight - sp.y / scale;
 
-            const float barW = 180f;
-            const float barH = 18f;
-            float top = Mathf.Round(cy - barH - 8f);
-            var outer = new Rect(Mathf.Round(cx - barW * 0.5f), top, barW, barH);
+            const float barW = 96f;
+            const float barH = 10f;
+            const float pad = 2f;
 
-            float p = iai.ChargeRatio;
+            var outer = new Rect(Mathf.Round(cx - barW * 0.5f), Mathf.Round(cy - barH), barW, barH);
+
+            float p = Mathf.Clamp01(iai.ChargeRatio);
             bool full = iai.IsFull;
+            Color accent = full ? White : StageAccent(p);
 
-            Color accent = full ? White : (p < 0.4f ? Cyan : (p < 0.8f ? Yellow : Purple));
+            float innerW = barW - pad * 2f;
+            float fillW = Mathf.Floor(innerW * p);
 
-            Panel(outer, accent, new Color(0.03f, 0.05f, 0.10f, 0.94f), false);
+            if (uiChargeFrame == null && ArtLibrary.Instance != null)
+                uiChargeFrame = ArtLibrary.Instance.uiChargeFrame;
+            if (uiChargeFill == null && ArtLibrary.Instance != null)
+                uiChargeFill = ArtLibrary.Instance.uiChargeFill;
 
-            // 分段填充（8px 一格，硬边）
-            float innerW = outer.width - 4f;
-            float filled = innerW * p;
-            for (float x = 0f; x < filled; x += 8f)
+            if (uiChargeFrame != null && uiChargeFill != null)
             {
-                float w = Mathf.Min(6f, filled - x);
-                if (w <= 0f) break;
-                Fill(new Rect(outer.x + 2f + x, outer.y + 2f, w, outer.height - 4f), accent);
+                DrawSprite(outer, uiChargeFrame);
+
+                if (fillW >= 1f)
+                {
+                    Color old = GUI.color;
+                    GUI.color = accent;
+                    DrawSpritePart(new Rect(outer.x + pad, outer.y + pad, fillW, barH - pad * 2f),
+                                   uiChargeFill,
+                                   new Rect(0f, 0f, Mathf.Clamp01(fillW / innerW), 1f));
+                    GUI.color = old;
+                }
+            }
+            else
+            {
+                // 没素材时的兜底：同尺寸的纯矩形条
+                Fill(outer, new Color(0.03f, 0.05f, 0.10f, 0.92f));
+                Fill(new Rect(outer.x, outer.y, outer.width, 1f), CyanMid);
+                Fill(new Rect(outer.x, outer.yMax - 1f, outer.width, 1f), CyanMid);
+                Fill(new Rect(outer.x, outer.y, 1f, outer.height), CyanMid);
+                Fill(new Rect(outer.xMax - 1f, outer.y, 1f, outer.height), CyanMid);
+                if (fillW >= 1f) Fill(new Rect(outer.x + pad, outer.y + pad, fillW, barH - pad * 2f), accent);
             }
 
-            // 阶段刻度线
+            // 阶段刻度
             IaiCharge.Stage[] st = iai.Stages;
             if (st != null)
             {
                 for (int i = 1; i < st.Length; i++)
                 {
-                    float tx = outer.x + 2f + innerW * st[i].threshold;
-                    Fill(new Rect(Mathf.Round(tx) - 1f, outer.y + 1f, 2f, outer.height - 2f), Deep);
+                    float tx = outer.x + pad + innerW * Mathf.Clamp01(st[i].threshold);
+                    Fill(new Rect(Mathf.Round(tx), outer.y + 1f, 1f, barH - 2f), new Color(0f, 0f, 0f, 0.6f));
                 }
             }
 
-            // 阶段名（条上方）
-            string name = st != null && st.Length > 0
-                ? st[Mathf.Clamp(iai.CurrentStage, 0, st.Length - 1)].name
-                : "";
-            LabelShadow(new Rect(outer.x, outer.y - 25f, outer.width, 22f), name, _center, accent, 1);
+            // 满蓄：顶部一条 1px 白线闪烁
+            if (full && Mathf.Repeat(Time.unscaledTime, 0.12f) < 0.06f)
+                Fill(new Rect(outer.x, outer.y, outer.width, 1f), White);
+        }
 
-            // 满蓄：白边闪烁 + MAX
-            if (full)
-            {
-                if (Mathf.Repeat(Time.unscaledTime, 0.14f) < 0.07f)
-                    Fill(new Rect(outer.x, outer.y, outer.width, 1f), White);
-
-                LabelShadow(new Rect(outer.xMax + 8f, outer.y + 1f, 60f, 18f), "MAX", _small, White, 1);
-            }
+        /// <summary>蓄力比例 → 三段配色。</summary>
+        Color StageAccent(float p)
+        {
+            if (p < 0.4f) return Cyan;
+            if (p < 0.8f) return Yellow;
+            return Purple;
         }
 
         /// <summary>像素进度条：1px 外框 + 8px 一格的分段填充 + 顶部高光。</summary>

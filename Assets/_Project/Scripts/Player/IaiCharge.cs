@@ -6,17 +6,18 @@ namespace TiantaiDash
     /// <summary>
     /// 居合拔刀蓄力斩。**只管时序与阶段**：
     /// 判定交给 <see cref="PlayerCombat"/>（复用剑身采样），
-    /// 剑的动作交给 <see cref="SwordSwing"/>（复用四段循环），
+    /// 剑的动作交给 <see cref="SwordSwing"/>（拔刀 → 持剑蓄力 → 上撩横斩 → 收刀），
     /// 停跑只调 <see cref="PlayerRunner.SetHold"/>（不动 timeScale）。
     ///
     /// 流程：
-    /// Idle → 按下左键 → Charging（手按刀柄 0.06s 后开始涨）→ 松开 / 满蓄 →
-    /// Releasing（拔刀下劈，判定生效）→ Recovery（收刀）→ Idle
+    /// Idle → 按下左键 → Charging（拔刀 0.09s，拔完才开始涨蓄力）→ 松开 / 满蓄 →
+    /// Releasing（上撩斩，判定生效）→ Recovery（收刀）→ Idle
     ///
     /// 关键规则：
-    /// - 蓄力**不用 timeScale**，所以暂停时 deltaTime 变 0，蓄力自动冻结、恢复后继续；
+    /// - 蓄力**不用 timeScale**，所以编辑器暂停时 deltaTime 变 0，蓄力自动冻结；
+    /// - 游戏状态离开 Playing（暂停 / 选卡 / 商店 / 失败 / 通关）一律取消蓄力；
     /// - 满蓄自动释放后置 `_waitRelease`，必须真的松开左键才允许下一次；
-    /// - 只有在地面、非冲刺、非出刀中才能起手（空中蓄力第一版不做）。
+    /// - **支持空中蓄力 / 蓄力中起跳**：停跑只锁水平速度，竖直方向交给原有跳跃与重力。
     /// </summary>
     public class IaiCharge : MonoBehaviour
     {
@@ -28,10 +29,10 @@ namespace TiantaiDash
             [Tooltip("进入本阶段所需的蓄力比例（0~1），必须递增")]
             [Range(0f, 1f)] public float threshold;
             public int damage = 1;
-            [Tooltip("下劈时长（秒），越短越利落")]
+            [Tooltip("上撩斩时长（秒），越短越利落")]
             public float slashTime = 0.13f;
-            [Tooltip("下劈终点角度：118 = 前下方，140 = 劈到脚下")]
-            public float endAngle = 118f;
+            [Tooltip("斩击终点角：98 = 剑尖朝正前方偏下；越大越往下收")]
+            public float endAngle = 98f;
             [Tooltip("剑长倍率（会叠加范围增益）")]
             public float lengthScale = 1f;
             public int trailCount = 3;
@@ -46,18 +47,20 @@ namespace TiantaiDash
 
         [Header("蓄力")]
         [Tooltip("从 0 拉到满需要多久")]
-        public float maxChargeTime = 1.2f;
-        [Tooltip("按下后先摆\"手按刀柄\"的姿势，这段时间不涨蓄力")]
-        public float drawDelay = 0.06f;
+        public float maxChargeTime = 0.75f;
+        [Tooltip("摆出\"手握刀柄\"姿势的起步延迟，这段时间不涨蓄力（不会短于拔刀时长）")]
+        public float drawDelay = 0.05f;
         [Tooltip("收刀后额外停顿，避免动作被打断")]
         public float recoveryTime = 0.05f;
+        [Tooltip("蓄力期间的移动系数：0.35 = 慢速滑行（推荐）；0 = 完全停住；1 = 不减速")]
+        [Range(0f, 1f)] public float chargeMoveFactor = 0.35f;
 
         [Header("三段参数")]
         public Stage[] stages =
         {
-            new Stage { name = "快斩", threshold = 0f,   damage = 1, slashTime = 0.13f, endAngle = 118f, lengthScale = 1f,   trailCount = 3, shake = 0.15f, hitStop = 0.03f },
-            new Stage { name = "强斩", threshold = 0.4f, damage = 2, slashTime = 0.18f, endAngle = 126f, lengthScale = 1.15f, trailCount = 5, shake = 0.35f, hitStop = 0.05f },
-            new Stage { name = "奥义", threshold = 0.8f, damage = 3, slashTime = 0.26f, endAngle = 140f, lengthScale = 1.3f,  trailCount = 7, shake = 0.6f,  hitStop = 0.08f },
+            new Stage { name = "快斩", threshold = 0f,   damage = 1, slashTime = 0.14f, endAngle = 92f,  lengthScale = 1f,   trailCount = 6, shake = 0.25f, hitStop = 0.05f },
+            new Stage { name = "强斩", threshold = 0.4f, damage = 2, slashTime = 0.18f, endAngle = 100f, lengthScale = 1.15f, trailCount = 8, shake = 0.5f,  hitStop = 0.07f },
+            new Stage { name = "奥义", threshold = 0.8f, damage = 3, slashTime = 0.24f, endAngle = 108f, lengthScale = 1.3f,  trailCount = 8, shake = 0.85f, hitStop = 0.12f },
         };
 
         [Header("引用（留空自动找）")]
@@ -69,9 +72,9 @@ namespace TiantaiDash
         public SwordSwing sword;
 
         [Header("音效")]
-        public string chargeSfx = "sfx_dash";
-        public string fullSfx = "sfx_select";
-        public string releaseSfx = "sfx_impact";
+        public string chargeSfx = "sfx_iai_charge";
+        public string fullSfx = "sfx_iai_full";
+        public string releaseSfx = "sfx_iai_slash";
 
         public event Action<float> OnChargeStarted;   // 参数：满蓄所需时间
         public event Action<int> OnStageChanged;      // 参数：阶段下标
@@ -84,10 +87,14 @@ namespace TiantaiDash
         float _recoverUntil;
         bool _waitRelease;
         bool _fullPlayed;
+        bool _releaseQueued;      // 锁存"松手"：一次性事件不能在拔刀延迟里被吞掉
+        SkyEvents _sky;
 
         public Phase CurrentPhase => _phase;
         public float ChargeRatio => maxChargeTime <= 0f ? 1f : Mathf.Clamp01(_charge / maxChargeTime);
         public bool IsCharging => _phase == Phase.Charging && _delayLeft <= 0f;
+        /// <summary>蓄力阶段（含拔刀那一小段），UI 与姿势帧用这个判断。</summary>
+        public bool IsChargePhase => _phase == Phase.Charging;
         public bool IsFull => ChargeRatio >= 1f;
         public bool IsAttacking => _phase == Phase.Releasing || _phase == Phase.Recovery;
         public int StageCount => stages != null ? stages.Length : 0;
@@ -97,6 +104,7 @@ namespace TiantaiDash
         void Awake()
         {
             if (input == null) input = GetComponentInParent<InputHandler>();
+            if (input == null) input = FindObjectOfType<InputHandler>();   // InputHandler 挂在场景根的 Game 上，不在 Player 父级
             if (runner == null) runner = GetComponent<PlayerRunner>();
             if (jump == null) jump = GetComponent<PlayerJump>();
             if (dash == null) dash = GetComponent<DashController>();
@@ -125,6 +133,22 @@ namespace TiantaiDash
             if (gm != null) gm.OnStateChanged -= HandleGameState;
         }
 
+        /// <summary>由 <see cref="GameBootstrap"/> 注入（InputHandler 在 Game 上，不是 Player 的父级）。</summary>
+        public void SetInput(InputHandler handler)
+        {
+            if (handler != null) input = handler;
+        }
+
+        /// <summary>天空事件引用只找一次，别在每帧的取消路径里 FindObjectOfType。</summary>
+        SkyEvents Sky
+        {
+            get
+            {
+                if (_sky == null) _sky = FindObjectOfType<SkyEvents>();
+                return _sky;
+            }
+        }
+
         void Update()
         {
             var gm = GameManager.Instance;
@@ -134,8 +158,9 @@ namespace TiantaiDash
                 return;
             }
 
-            // 进入冲刺就放弃蓄力（冲刺优先级更高）
-            if (dash != null && dash.IsDashing)
+            // 冲刺优先级最高，但**只打断蓄力**：
+            // 击杀会立刻触发冲刺，那时剑正在斩，不能把它强行拽回腰间。
+            if (dash != null && dash.IsDashing && _phase == Phase.Charging)
             {
                 ForceCancel();
                 return;
@@ -172,10 +197,11 @@ namespace TiantaiDash
             }
         }
 
+        /// <summary>起手条件：剑不在忙、不在冲刺、游戏在跑。空中也允许（支持蓄力中起跳）。</summary>
         bool CanStart()
         {
-            if (jump != null && !jump.IsGrounded) return false;    // 第一版只做地面蓄力
             if (sword != null && sword.IsBusy) return false;
+            if (dash != null && dash.IsDashing) return false;
             return true;
         }
 
@@ -183,13 +209,20 @@ namespace TiantaiDash
         {
             _phase = Phase.Charging;
             _charge = 0f;
-            _delayLeft = drawDelay;
+            _releaseQueued = false;
+            // 拔刀动画走完之前不涨蓄力，否则进度条会先涨后拔
+            float draw = sword != null ? sword.DrawTime : 0.05f;
+            _delayLeft = Mathf.Max(drawDelay, draw);
             _fullPlayed = false;
             CurrentStage = 0;
 
-            // 局部暂停：玩家停 → 相机停 → 视差背景停，不动 timeScale
-            if (runner != null) runner.SetHold(true);
-            var sky = FindObjectOfType<SkyEvents>();
+            // 局部减速：玩家慢下来 → 相机跟着慢 → 视差背景跟着慢，不动 timeScale
+            if (runner != null) runner.SetHold(true, chargeMoveFactor);
+
+            // 手握刀柄（刀还在鞘里）
+            if (sword != null) sword.PlayDraw(NormalizedSpeed());
+
+            var sky = Sky;
             if (sky != null) sky.SetPaused(true);
 
             AudioManager.Play(chargeSfx, 0.35f, 0.75f);
@@ -200,9 +233,15 @@ namespace TiantaiDash
 
         void TickCharging()
         {
+            // 松手是**一次性事件**，必须先锁存，否则拔刀延迟里的那一帧会被直接吞掉，
+            // 表现为"点一下左键，1.2 秒后自己蹦出一刀"。这是之前长按蓄力失效的根因。
+            if (input != null && input.AttackReleased) _releaseQueued = true;
+
             if (_delayLeft > 0f)
             {
                 _delayLeft -= Time.deltaTime;
+                // 拔刀没走完就松手 → 一拔完立刻按第一阶段出刀，而不是干等蓄满
+                if (_delayLeft <= 0f && _releaseQueued) Release(false);
                 return;
             }
 
@@ -225,13 +264,12 @@ namespace TiantaiDash
                 CameraFollow.Shake(0.12f);
             }
 
-            // 刀身随蓄力一点点离鞘（纯表现，不影响判定）
+            // 刀身随蓄力冷光变亮 + 微微出鞘（纯表现，不影响判定）
             if (sword != null) sword.SetChargeVisual(ChargeRatio);
 
-            bool released = input != null && input.AttackReleased;
             bool full = _charge >= maxChargeTime;
 
-            if (released || full) Release(full);
+            if (_releaseQueued || full) Release(full);
         }
 
         void Release(bool auto)
@@ -240,20 +278,23 @@ namespace TiantaiDash
             CurrentStage = idx;
             Stage stage = stages[Mathf.Clamp(idx, 0, stages.Length - 1)];
 
-            // 先恢复运动，再出刀（避免斩击期间仍然停着）
+            // 先恢复运动，再出刀（斩击期间玩家照常往前跑）
             if (runner != null) runner.SetHold(false);
-            var sky = FindObjectOfType<SkyEvents>();
+            var sky = Sky;
             if (sky != null) sky.SetPaused(false);
             if (sword != null) sword.SetChargeVisual(0f);
+            _releaseQueued = false;
+
+            // 刀光强度与新月光按阶段区分（奥义额外叠十字闪光）
+            if (sword != null) sword.SetStage(idx);
 
             if (combat != null)
             {
-                float speedScale = 0.17f / Mathf.Max(0.06f, stage.slashTime);
                 combat.hitStop = stage.hitStop;
                 combat.BeginAttack(
                     stage.damage,
-                    speedScale,
-                    stage.lengthScale * (combat.RangeLengthScale),
+                    NormalizedSpeedFor(stage.slashTime),
+                    stage.lengthScale * combat.RangeLengthScale,
                     stage.endAngle,
                     stage.trailCount);
             }
@@ -270,6 +311,23 @@ namespace TiantaiDash
             _charge = 0f;
 
             if (OnReleased != null) OnReleased(idx);
+        }
+
+        /// <summary>拔刀用的速度倍率（1 = 基准时长）。</summary>
+        float NormalizedSpeed()
+        {
+            return 1f;
+        }
+
+        /// <summary>
+        /// 目标斩击时长 → SwordSwing 的速度倍率（它的基准时长是 sword.slashTime）。
+        /// 例：基准 0.17s，目标 0.13s → 倍率 1.31（更快）。
+        /// </summary>
+        float NormalizedSpeedFor(float targetSlashTime)
+        {
+            if (sword == null) return 1f;
+            float baseTime = Mathf.Max(0.01f, sword.slashTime);
+            return baseTime / Mathf.Max(0.04f, targetSlashTime);
         }
 
         void EndAttack()
@@ -291,25 +349,31 @@ namespace TiantaiDash
             return result;
         }
 
-        /// <summary>强制取消（死亡 / 通关 / 暂停 / 冲刺 / 商店）。恢复速度、清蓄力、收剑。</summary>
+        /// <summary>强制取消（死亡 / 通关 / 暂停 / 冲刺 / 商店）。恢复速度、清蓄力、收剑。可重复调用。</summary>
         public void ForceCancel()
         {
-            bool wasActive = _phase != Phase.Idle;
+            bool dirty = _phase != Phase.Idle
+                         || _charge > 0f
+                         || (runner != null && runner.IsHeld)
+                         || (sword != null && sword.IsBusy);
+
+            if (!dirty) return;
 
             _phase = Phase.Idle;
             _charge = 0f;
             _delayLeft = 0f;
             CurrentStage = 0;
             _waitRelease = true;
+            _releaseQueued = false;
 
             if (runner != null) runner.SetHold(false);
 
-            var sky = FindObjectOfType<SkyEvents>();
+            var sky = Sky;
             if (sky != null) sky.SetPaused(false);
 
             if (sword != null && sword.IsBusy) sword.Cancel();
 
-            if (wasActive && OnCancelled != null) OnCancelled();
+            if (OnCancelled != null) OnCancelled();
         }
 
         // ---------------- 调试接口（MCP / 自动化测试用，鼠标输入无法脚本模拟） ----------------
@@ -326,6 +390,7 @@ namespace TiantaiDash
             _delayLeft = 0f;
             _charge = maxChargeTime * Mathf.Clamp01(ratio);
             CurrentStage = StageOf(ChargeRatio);
+            if (sword != null) sword.SetChargeVisual(ChargeRatio);
         }
 
         public void DebugRelease()
@@ -335,7 +400,7 @@ namespace TiantaiDash
 
         void HandleGameState(GameState next)
         {
-            // 这些状态都不该保留蓄力
+            // 这些状态都不该保留蓄力（暂停 = 取消，恢复后必须重新按下左键）
             if (next != GameState.Playing) ForceCancel();
         }
     }

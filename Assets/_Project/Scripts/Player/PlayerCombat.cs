@@ -23,8 +23,8 @@ namespace TiantaiDash
 
         [Header("剑")]
         public SwordSwing sword;
-        [Tooltip("剑身判定圆半径（世界单位）")]
-        public float swordRadius = 0.72f;
+        [Tooltip("剑身判定圆半径（世界单位）。够大才能做到『进刀光就打得到』，0.62 ≈ 刀宽 ×1.3")]
+        public float swordRadius = 0.62f;
         [Tooltip("每级范围增益：剑长 +15%，判定半径 +12%")]
         public float lengthPerLevel = 0.15f;
         public float radiusPerLevel = 0.12f;
@@ -35,6 +35,8 @@ namespace TiantaiDash
 
         [Header("命中特效（留空用素材总表）")]
         public Sprite hitFx;
+        [Tooltip("命中冲击闪光（十字星），会盖在敌人身上做\"打实了\"的一帧")]
+        public Sprite impactFlash;
 
         [Header("引用（留空自动找）")]
         public InputHandler input;
@@ -56,13 +58,15 @@ namespace TiantaiDash
         public bool IsBusy => sword != null && sword.IsBusy;
 
         readonly HashSet<int> _hitThisSwing = new HashSet<int>();
-        readonly Vector3[] _samples = new Vector3[3];
+        readonly Vector3[] _samples = new Vector3[SwordSwing.SampleCount];
         float _cooldownUntil;
+        float _stageRadiusScale = 1f;   // 蓄力阶段的判定放大（不含范围增益，避免重复叠加）
 
         public float CurrentCooldown =>
             baseCooldown * Mathf.Pow(1f - cooldownReductionPerLevel, CooldownLevel);
 
-        public float CurrentRadius => swordRadius * (1f + radiusPerLevel * RangeLevel);
+        public float CurrentRadius =>
+            swordRadius * (1f + radiusPerLevel * RangeLevel) * _stageRadiusScale;
 
         /// <summary>范围增益给的剑长倍率。</summary>
         public float RangeLengthScale => 1f + lengthPerLevel * RangeLevel;
@@ -91,7 +95,7 @@ namespace TiantaiDash
                 return;
             }
 
-            if (sword != null && sword.IsSlashing) ResolveSwordHits();
+            if (sword != null && sword.IsInHitWindow) ResolveSwordHits();
 
             // 有蓄力组件时，攻击键归它管；没有才退回即时攻击
             if (iai == null && input != null && input.AttackPressed) RequestAttack();
@@ -130,11 +134,18 @@ namespace TiantaiDash
             AttackCount++;
             CurrentDamage = damageOverride > 0 ? damageOverride : damage;
 
+            // 判定半径只跟随"阶段倍率"，范围增益那部分已经算进 CurrentRadius，别重复乘
+            float stageScale = lengthScaleOverride > 0f ? lengthScaleOverride / Mathf.Max(0.01f, RangeLengthScale) : 1f;
+            _stageRadiusScale = Mathf.Clamp(stageScale, 0.5f, 2f);
+
             sword.lengthScale = lengthScaleOverride > 0f ? lengthScaleOverride : RangeLengthScale;
             sword.SetSlashEndAngle(endAngleOverride > 0f ? endAngleOverride : sword.slashEndAngle);
             sword.SetTrailCount(trailOverride > 0 ? trailOverride : sword.trailCount);
 
-            sword.Play(speedScale);
+            // 剑已经拔出来停在持剑位（蓄力）→ 从这里直接劈；
+            // 否则（快速斩）走完整的"拔刀 → 劈 → 收刀"
+            if (sword.CurrentPhase == SwordSwing.Phase.Guard) sword.PlaySlash(speedScale);
+            else sword.Play(speedScale);
         }
 
         /// <summary>沿剑身取三个采样点做圆形重叠，剑扫过去就能打到。</summary>
@@ -161,11 +172,12 @@ namespace TiantaiDash
                     if (enemy != null) enemy.TakeDamage(CurrentDamage, true);
                     else target.TakeDamage(CurrentDamage);
 
-                    CameraFollow.Shake(0.16f);
+                    CameraFollow.Shake(0.28f);
                     AudioManager.Play("sfx_hit", 0.9f, Random.Range(0.95f, 1.1f));
                     if (hitStop > 0f) TimeJuice.HitStop(hitStop, 0.06f);
 
                     SpawnSpark(hits[i].bounds.center);
+                    SpawnImpactFlash(hits[i].bounds.center);
                 }
             }
         }
@@ -176,7 +188,7 @@ namespace TiantaiDash
             if (spark == null) return;
 
             FxSprite fx = FxSprite.Spawn(spark, at, Vector2.zero,
-                new Color(1f, 0.95f, 0.6f, 1f), 0.18f, 1.6f, 12);
+                new Color(1f, 0.95f, 0.6f, 1f), 0.18f, 1.6f, 24);
             fx.drag = 0f;
         }
 
@@ -185,6 +197,22 @@ namespace TiantaiDash
             if (hitFx != null) return hitFx;
             ArtLibrary art = ArtLibrary.Instance;
             return art != null ? art.FirstFrame(art.hitFrames) : null;
+        }
+
+        /// <summary>命中冲击闪光：一帧白亮十字，盖在敌人身上，打击感的重心在这里。</summary>
+        void SpawnImpactFlash(Vector3 at)
+        {
+            ArtLibrary art = ArtLibrary.Instance;
+            if (impactFlash == null && art != null) impactFlash = art.iaiFlash;
+            if (impactFlash == null) return;
+
+            // 层级要压在敌人(5)和角色(20/22)之上，尺寸别太小——太小会被血和敌人吃掉
+            FxSprite fx = FxSprite.Spawn(impactFlash, at, Vector2.zero,
+                new Color(1f, 1f, 1f, 1f),
+                0.13f, Random.Range(0.55f, 0.75f), 26);
+            fx.drag = 0f;
+            fx.grow = 1.5f;
+            fx.spin = Random.Range(0f, 90f);
         }
     }
 }

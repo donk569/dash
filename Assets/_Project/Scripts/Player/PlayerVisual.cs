@@ -22,6 +22,8 @@ namespace TiantaiDash
         public Sprite[] landFrames;
         public Sprite[] shootFrames;
         public Sprite[] hurtFrames;
+        [Tooltip("居合拔刀蓄力的姿势帧（留空回退 idle）。建议用下蹲/低姿态的帧")]
+        public Sprite[] chargeFrames;
 
         [Header("帧率")]
         public float runFps = 13f;
@@ -46,8 +48,10 @@ namespace TiantaiDash
         [Range(0.5f, 1.5f)] public float visualScale = 0.78f;
 
         [Header("挥剑发力")]
-        [Tooltip("下劈时身体前倾的角度（负 Z 为前方）")]
+        [Tooltip("斩击时身体前倾的角度（负 Z 为前方）")]
         [Range(0f, 20f)] public float attackLean = 8f;
+        [Tooltip("拔刀蓄力时身体前倾的角度（比斩击小，保持蓄势的稳定感）")]
+        [Range(0f, 20f)] public float chargeLean = 3f;
         [Tooltip("前倾跟随速度")]
         public float leanSpeed = 900f;
 
@@ -56,7 +60,7 @@ namespace TiantaiDash
         [Range(0f, 0.4f)] public float squashAmount = 0.16f;
         public float squashRecover = 1.1f;
 
-        enum Pose { Idle, Run, Rise, Fall, Land, Shoot, Dead }
+        enum Pose { Idle, Run, Rise, Fall, Land, Shoot, Charge, Dead }
 
         SpriteRenderer _sr;
         Transform _visual;
@@ -65,6 +69,7 @@ namespace TiantaiDash
         PlayerHealth _health;
         PlayerRunner _runner;
         PlayerCombat _combat;
+        IaiCharge _iai;
 
         [Header("调试")]
         [Tooltip("打开后在 Inspector 能看到最近经历的姿态序列")]
@@ -93,6 +98,7 @@ namespace TiantaiDash
             _health = GetComponent<PlayerHealth>();
             _runner = GetComponent<PlayerRunner>();
             _combat = GetComponent<PlayerCombat>();
+            _iai = GetComponent<IaiCharge>();
 
             if (idleFrames == null || idleFrames.Length == 0) FillFromLibrary();
 
@@ -122,6 +128,7 @@ namespace TiantaiDash
             landFrames = art.playerLand;
             shootFrames = art.playerShoot;
             hurtFrames = art.playerHurt;
+            chargeFrames = art.playerCharge;
         }
 
         void HandleJumped()
@@ -165,6 +172,12 @@ namespace TiantaiDash
             }
         }
 
+        /// <summary>当前身体前倾角（度）。SwordSwing 用它让剑跟着身体转，避免"身体动了剑没动"。</summary>
+        public float CurrentLean => _lean;
+
+        /// <summary>当前姿势名（调试/自测用）。</summary>
+        public string CurrentPose => _pose.ToString();
+
         void SetPose(Pose next)
         {
             if (next == _pose) return;
@@ -190,8 +203,26 @@ namespace TiantaiDash
                 return;
             }
 
-            // 挥剑全程（拔出 → 劈 → 收剑）：插"双手发力"帧
-            // 素材里的 shoot 是双手前伸，正好当拔剑下劈的姿态
+            // 居合蓄力（拔刀 + 持剑蓄力）。
+            // 蓄力现在是"减速滑行"，所以还在跑的时候用跑步循环（边跑边蓄，不僵），
+            // 慢下来才换成低姿态的蓄力帧。
+            if (_iai != null && _iai.IsChargePhase)
+            {
+                float spd = Mathf.Abs(_rb != null ? _rb.velocity.x : 0f);
+                if (spd > minRunSpeed && Has(runFrames))
+                {
+                    SetPose(Pose.Run);
+                }
+                else
+                {
+                    SetPose(Pose.Charge);
+                }
+                ApplyFrame();
+                return;
+            }
+
+            // 斩击 / 收刀：插"双手发力"帧
+            // 素材里的 shoot 是双手前伸，正好当挥剑发力的姿态
             if (_combat != null && _combat.IsBusy && Has(shootFrames))
             {
                 SetPose(Pose.Shoot);
@@ -245,6 +276,10 @@ namespace TiantaiDash
                     frame = First(shootFrames);
                     break;
 
+                case Pose.Charge:
+                    frame = First(chargeFrames) ?? ArtLibrary.Pick(idleFrames, _clock, idleFps) ?? First(runFrames);
+                    break;
+
                 case Pose.Land:
                     frame = First(landFrames) ?? First(fallFrames);
                     break;
@@ -289,8 +324,11 @@ namespace TiantaiDash
             float lift = _squash < 0f ? -_squash * 0.9f : 0f;
             _visual.localPosition = new Vector3(0f, lift, 0f);
 
-            // 挥剑时身体前压（只转视觉，碰撞体不动）
-            float wantLean = (_combat != null && _combat.IsBusy) ? attackLean : 0f;
+            // 挥剑时身体前压（只转视觉，碰撞体不动）；蓄力时压得少一点，保持"蓄势站定"的感觉
+            float wantLean = 0f;
+            if (_iai != null && _iai.IsChargePhase) wantLean = chargeLean;
+            else if (_combat != null && _combat.IsBusy) wantLean = attackLean;
+
             _lean = Mathf.MoveTowards(_lean, wantLean, leanSpeed * Time.deltaTime);
             _visual.localRotation = Quaternion.Euler(0f, 0f, -_lean);
         }

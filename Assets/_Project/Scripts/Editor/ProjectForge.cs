@@ -253,6 +253,8 @@ namespace TiantaiDash.EditorTools
             lib.playerLand = new Sprite[0];   // 落地只做压扁形变，不换姿势
             lib.playerShoot = Set("Player", "player_shoot");
             lib.playerHurt = Set("Player", "player_hurt");
+            // 居合蓄力姿势：先拿下蹲帧占位（素材包里没有专门的拔刀/蓄力帧）
+            lib.playerCharge = Set("Player", "player_crouch");
 
             lib.droneFrames = Set("Enemy", "enemy_drone");
             lib.turretFrames = Set("Enemy", "enemy_turret");
@@ -284,8 +286,20 @@ namespace TiantaiDash.EditorTools
             lib.heart = One("UI/ui_heart");
             lib.uiDigits = One("UI/ui_digits");
             lib.uiScanline = One("UI/ui_scanline");
+            // 居合蓄力条（gen_iai_assets.py 生成）
+            lib.uiChargeFrame = One("UI/ui_charge_frame");
+            lib.uiChargeFill = One("UI/ui_charge_fill");
 
             lib.sword = One("Props/prop_sword");
+            // 居合专属素材（gen_iai_assets.py 生成）
+            lib.sheath = One("Props/prop_sheath");
+            lib.slashArc = One("Fx/fx_slash_arc");
+            lib.slashCrescent = One("Fx/fx_slash_crescent");
+            lib.iaiHorizontal = One("Fx/fx_iai_horizontal");
+            lib.chargeRing = Set("Fx", "fx_charge");
+            lib.iaiFlash = One("Fx/fx_iai_flash");
+            lib.bloodFrames = Set("Fx", "fx_blood_").Where(s => s != null).ToArray();
+            lib.bloodMist = One("Fx/fx_blood_mist");
             lib.coin = One("UI/ui_coin");
             lib.shopIcon = One("Props/prop_shop");
 
@@ -373,12 +387,14 @@ namespace TiantaiDash.EditorTools
             col.edgeRadius = 0.02f;
             col.sharedMaterial = GetOrCreateNoFriction();
 
-            // 剑：**待机时插在背后**（层级 19，低于角色的 20 → 被身体挡住一半），
-            // 挥砍时由 SwordSwing 抽到身前（22）下劈，劈完再收回背后。
+            // 剑：**待机时斜挂在腰后**（层级 19，低于角色的 20 → 被身体挡住一半），
+            // 蓄力时由 SwordSwing 绕肩拔到身前（22），斩完再收回腰间。
+            // 注意：真正决定位置的是 SwordSwing.sheathedPos / sheathedAngle / baseLength
+            // （Awake 里的 ApplySheathed 会覆盖 Transform），这里写的是让编辑态看起来一致。
             var swordGo = new GameObject("Sword");
             swordGo.transform.SetParent(go.transform, false);
-            swordGo.transform.localPosition = new Vector3(-0.46f, 0.94f, 0f);
-            swordGo.transform.localRotation = Quaternion.Euler(0f, 0f, 37f);
+            swordGo.transform.localPosition = new Vector3(-0.28f, 1.16f, 0f);
+            swordGo.transform.localRotation = Quaternion.Euler(0f, 0f, 104f);
 
             var swordSr = swordGo.AddComponent<SpriteRenderer>();
             swordSr.sprite = art.sword;
@@ -387,7 +403,19 @@ namespace TiantaiDash.EditorTools
 
             var swing = swordGo.AddComponent<SwordSwing>();
             swing.blade = swordSr;
-            swing.baseLength = 1.75f;
+            swing.baseLength = 1.5f;
+
+            // 刀鞘：必须是 Sword 的**兄弟**（挂在 Player 下），
+            // 否则拔刀时鞘会跟着剑一起飞出去。SwordSwing 会把它钉在腰间收刀姿态上。
+            var sheathGo = new GameObject("Sheath");
+            sheathGo.transform.SetParent(go.transform, false);
+            sheathGo.transform.localPosition = new Vector3(-0.28f, 1.16f, 0f);
+            sheathGo.transform.localRotation = Quaternion.Euler(0f, 0f, 104f);
+            var sheathSr = sheathGo.AddComponent<SpriteRenderer>();
+            sheathSr.sprite = art.sheath;
+            sheathSr.sortingOrder = 19;
+            swing.sheath = sheathSr;
+            swing.sheathedBladeOrder = 18;
 
             var combat = go.AddComponent<PlayerCombat>();
             combat.sword = swing;
@@ -406,6 +434,7 @@ namespace TiantaiDash.EditorTools
             visual.shootFrames = art.playerShoot;
             visual.hurtFrames = art.playerHurt;
             visual.landFrames = art.playerLand;
+            visual.chargeFrames = art.playerCharge;
 
             go.AddComponent<DashFx>();
 

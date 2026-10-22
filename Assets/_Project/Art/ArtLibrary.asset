@@ -35,6 +35,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: e51cd9a33c654344dbf12ce8576d9690, type: 3}
   playerHurt:
   - {fileID: 21300000, guid: 6f2c4991d2dd5634aa7ed83b9111df23, type: 3}
+  playerCharge:
+  - {fileID: 21300000, guid: 1ee7710640d7f254db8cd23d69256b8d, type: 3}
   droneFrames:
   - {fileID: 21300000, guid: a9578bb2ea27db340b3f75fae0eaf2f1, type: 3}
   - {fileID: 21300000, guid: 5259b2b09d9b6614fa6d64f81c2cc71d, type: 3}
@@ -86,9 +88,25 @@ MonoBehaviour:
   - {fileID: 21300000, guid: c7f45722b38fd96488ff04f120aaf457, type: 3}
   uiDigits: {fileID: 21300000, guid: 0cc28e1df9ffeba42a22dc50283a0899, type: 3}
   uiScanline: {fileID: 21300000, guid: 9916d5c06d7620640997ac96cb51021f, type: 3}
+  uiChargeFrame: {fileID: 21300000, guid: b99c3ebb7ca93dc47bbc737308a866e8, type: 3}
+  uiChargeFill: {fileID: 21300000, guid: 0ca0df782b9e5d9458785522346e7951, type: 3}
   sword: {fileID: 21300000, guid: 403c24df638291c4cbf365bceccfc498, type: 3}
+  sheath: {fileID: 21300000, guid: 8cf3361340939db45970a162bc834a1a, type: 3}
   coin: {fileID: 21300000, guid: 57a4c0466d8d9bf4da766e55b9bc8e65, type: 3}
   shopIcon: {fileID: 21300000, guid: ed03a7c7a5c421848acf5b7dfd157ae2, type: 3}
+  slashArc: {fileID: 21300000, guid: 35781807044aec244a8537c792329c0d, type: 3}
+  slashCrescent: {fileID: 21300000, guid: c05357bc8d77eef44ae08dc80ee11f4d, type: 3}
+  iaiHorizontal: {fileID: 21300000, guid: 098a86069a874414bb7a72d88b445be6, type: 3}
+  chargeRing:
+  - {fileID: 21300000, guid: c1bdd7b93d16f7c40b309754392ecccd, type: 3}
+  - {fileID: 21300000, guid: 73731e6b3df387548a225b10e9565a3a, type: 3}
+  - {fileID: 21300000, guid: 55e9ef54cf52bea45ab8040239de1285, type: 3}
+  iaiFlash: {fileID: 21300000, guid: c2710c75c3b5f7343a7fbe4d2f113efe, type: 3}
+  bloodFrames:
+  - {fileID: 21300000, guid: 2edb6ac5ff5ede54d8cbf1df7cb1a14a, type: 3}
+  - {fileID: 21300000, guid: 52b436f169627e14eb573d0084a15d9d, type: 3}
+  - {fileID: 21300000, guid: 9d41a073fe6fc074097753b20d309166, type: 3}
+  bloodMist: {fileID: 21300000, guid: a48cfbe801e42294fa0e751884f2d74e, type: 3}
   moonGlow: {fileID: 21300000, guid: 26bc734d44ea98644a9a954bc21108a9, type: 3}
   meteorHead: {fileID: 21300000, guid: 717c66e344c9af34db41e9ca3770faca, type: 3}
   lightCone: {fileID: 21300000, guid: 7368ae5d1639b1b43bcc27c7a38beb26, type: 3}
