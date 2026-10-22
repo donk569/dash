@@ -24,6 +24,8 @@ namespace TiantaiDash
         Vector3 _base;
         float _openX;
         Transform _player;
+        Collider2D _playerCol;
+        BoxCollider2D _col;
         bool _opened;
         SpriteRenderer _sr;
 
@@ -59,8 +61,9 @@ namespace TiantaiDash
             if (col != null)
             {
                 col.isTrigger = true;
-                col.size = new Vector2(2.4f, 3.2f);
-                col.offset = new Vector2(0f, 1.2f);
+                col.size = new Vector2(1.6f, 2.6f);
+                col.offset = new Vector2(0f, 1.3f);
+                _col = col;
             }
         }
 
@@ -123,7 +126,18 @@ namespace TiantaiDash
             var gm = GameManager.Instance;
             if (gm == null || !gm.IsPlaying) return;
 
-            if (_player.position.x >= _openX) OpenShop();
+            // 只有"碰到商店碰撞体"才开门：每帧比对包围盒，
+            // 高速冲刺也不会像 OnTriggerEnter 那样被隧穿过去
+            if (TouchingPlayer()) OpenShop();
+        }
+
+        bool TouchingPlayer()
+        {
+            if (_col == null) _col = GetComponentInChildren<BoxCollider2D>();
+            if (_col == null || _player == null) return false;
+            if (_playerCol == null) _playerCol = _player.GetComponentInChildren<Collider2D>();
+            if (_playerCol == null) return false;
+            return _col.bounds.Intersects(_playerCol.bounds);
         }
 
         void OpenShop()
