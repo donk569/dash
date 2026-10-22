@@ -28,12 +28,13 @@ namespace TiantaiDash
             public string name = "快斩";
             [Tooltip("进入本阶段所需的蓄力比例（0~1），必须递增")]
             [Range(0f, 1f)] public float threshold;
+            [Tooltip("已改为「劈到即死」，这个伤害值不再参与结算（保留字段兼容旧数据）")]
             public int damage = 1;
             [Tooltip("上撩斩时长（秒），越短越利落")]
             public float slashTime = 0.13f;
             [Tooltip("斩击终点角：98 = 剑尖朝正前方偏下；越大越往下收")]
             public float endAngle = 98f;
-            [Tooltip("剑长倍率（会叠加范围增益）")]
+            [Tooltip("攻击范围倍率（蓄力的核心差别：越大刀越长、判定半径越大）")]
             public float lengthScale = 1f;
             public int trailCount = 3;
             [Tooltip("镜头震动强度")]

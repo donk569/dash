@@ -857,18 +857,23 @@ namespace TiantaiDash
             // 横斩只用横贯刃光。新月是"圆形弧光"，放在横斩里会把画面读成转圈，删掉。
             if (iaiHorizontal != null)
             {
+                // 蓄力越大，刃光越长越厚越亮 —— 伤害已经统一成一击必杀，蓄力的差别全在"范围 + 气势"
+                float stageK = 1f + 0.18f * _stage;
+                float length = iaiHorizontalLength * stageK;
+                float thick = iaiHorizontalThickness * (1f + 0.10f * _stage);
+
                 Vector2 b = iaiHorizontal.bounds.size;
                 FxSprite fx = FxSprite.Spawn(iaiHorizontal, streak, new Vector2(2.2f + 0.6f * _stage, 0f),
-                    new Color(1f, 1f, 1f, 0.92f),
-                    0.12f + 0.04f * _stage, 1f, frontOrder + 2);
+                    new Color(1f, 1f, 1f, 0.82f + 0.06f * _stage),
+                    0.12f + 0.05f * _stage, 1f, frontOrder + 2);
                 fx.drag = 0f;
                 fx.grow = 0f;
                 fx.shrink = false;
                 fx.transform.rotation = Quaternion.Euler(0f, 0f, iaiHorizontalTilt - 2f * _stage);
                 // 按贴图世界尺寸直接换算成"想要的长度/厚度"（FxSprite 的 grow 会覆盖各向异性缩放，所以不用 grow）
                 fx.transform.localScale = new Vector3(
-                    iaiHorizontalLength / Mathf.Max(0.001f, b.x),
-                    iaiHorizontalThickness / Mathf.Max(0.001f, b.y),
+                    length / Mathf.Max(0.001f, b.x),
+                    thick / Mathf.Max(0.001f, b.y),
                     1f);
             }
 
@@ -897,10 +902,14 @@ namespace TiantaiDash
             Vector2 unit = Vector2.one * 0.0625f;
             if (white.bounds.size.x > 0.0001f) unit = new Vector2(white.bounds.size.x, white.bounds.size.y);
 
-            for (int i = 0; i < slashSpeedLines; i++)
+            // 速度线也随蓄力变多变长，蓄得越满，刀风越夸张
+            int lines = slashSpeedLines + _stage * 2;
+            float lineK = 1f + 0.14f * _stage;
+
+            for (int i = 0; i < lines; i++)
             {
                 float y = Random.Range(-0.28f, 0.42f);
-                float len = Random.Range(1.5f, 2.7f);
+                float len = Random.Range(1.5f, 2.7f) * lineK;
                 float thick = Random.Range(0.035f, 0.055f);
                 // 围绕刃光中心散开，并跟刃光同一个倾角，否则会读成"飘着的碎线"
                 Vector3 at = origin + new Vector3(Random.Range(-0.55f, 0.45f), y, 0f);

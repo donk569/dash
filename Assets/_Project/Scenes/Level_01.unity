@@ -18907,6 +18907,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 3851700434277116260, guid: bf05236102a8100449dcc89012bbfa06, type: 3}
+      propertyPath: stages.Array.data[1].lengthScale
+      value: 1.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3851700434277116260, guid: bf05236102a8100449dcc89012bbfa06, type: 3}
+      propertyPath: stages.Array.data[2].lengthScale
+      value: 1.7
+      objectReference: {fileID: 0}
     - target: {fileID: 4405326748550455899, guid: bf05236102a8100449dcc89012bbfa06, type: 3}
       propertyPath: cutEndPos.y
       value: 1.9

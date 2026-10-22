@@ -169,6 +169,7 @@ MonoBehaviour:
   jumpVelocity: 15.7
   secondJumpVelocity: 14
   coyoteTime: 0.1
+  jumpBufferTime: 0.12
   extraJumps: 0
   input: {fileID: 0}
   allowDashJump: 1
@@ -207,6 +208,9 @@ MonoBehaviour:
   ramDamage: 1
   invincibleWhileDashing: 1
   runner: {fileID: 0}
+  allowManualDash: 1
+  manualCooldown: 5
+  input: {fileID: 0}
   hitFx: {fileID: 0}
 --- !u!114 &4293707788268779761
 MonoBehaviour:
@@ -309,7 +313,7 @@ MonoBehaviour:
     damage: 2
     slashTime: 0.18
     endAngle: 100
-    lengthScale: 1.15
+    lengthScale: 1.3
     trailCount: 8
     shake: 0.5
     hitStop: 0.07
@@ -319,7 +323,7 @@ MonoBehaviour:
     damage: 3
     slashTime: 0.24
     endAngle: 108
-    lengthScale: 1.3
+    lengthScale: 1.7
     trailCount: 8
     shake: 0.85
     hitStop: 0.12

@@ -167,10 +167,10 @@ namespace TiantaiDash
                     if (_hitThisSwing.Contains(id)) continue;
                     _hitThisSwing.Add(id);
 
-                    // 玩家造成的伤害要标来源：击杀后才有冲刺奖励
+                    // 玩家劈到就死：不再按伤害结算（蓄力只影响范围/特效，不影响伤害）
                     EnemyHealth enemy = hits[i].GetComponentInParent<EnemyHealth>();
-                    if (enemy != null) enemy.TakeDamage(CurrentDamage, true);
-                    else target.TakeDamage(CurrentDamage);
+                    if (enemy != null) enemy.TakeDamage(Mathf.Max(1, enemy.CurrentHealth), true);
+                    else target.TakeDamage(9999);
 
                     CameraFollow.Shake(0.28f);
                     AudioManager.Play("sfx_hit", 0.9f, Random.Range(0.95f, 1.1f));
