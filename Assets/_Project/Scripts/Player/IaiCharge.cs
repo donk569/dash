@@ -408,7 +408,8 @@ namespace TiantaiDash
         }
 
         /// <summary>
-        /// 蓄力跳：冷却好了才允许。跳出去的同时取消蓄力，但保留减速滑行到落地。
+        /// 蓄力跳：冷却好了才允许，**不看地面状态**（空中也能跳一次）。
+        /// 跳出去的同时取消蓄力，但保留减速滑行到落地。
         /// 冷却中返回 false，调用方应该把这次跳吞掉（蓄力继续）。
         /// </summary>
         public bool TryChargeJump()
@@ -416,7 +417,7 @@ namespace TiantaiDash
             if (!ChargeJumpReady) return false;
 
             _nextChargeJumpTime = Time.time + chargeJumpCooldown;
-            if (jump != null) jump.RequestJump();
+            if (jump != null) jump.ChargeJump();
             CancelChargeForJump();
             return true;
         }

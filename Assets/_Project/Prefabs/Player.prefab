@@ -292,6 +292,7 @@ MonoBehaviour:
   drawDelay: 0.05
   recoveryTime: 0.05
   chargeMoveFactor: 0.35
+  chargeJumpCooldown: 1
   stages:
   - name: "\u5FEB\u65A9"
     threshold: 0
@@ -371,7 +372,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4427703884947194073}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -456,7 +457,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4477899914342746276}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -513,6 +514,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fcde3c17dd2cd23418b1eb39bcc8c0f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  weaponInSprite: 1
+  carryOnBack: 1
+  carriedPos: {x: 0.02, y: 1.05, z: 0}
+  carriedAngle: 38
+  carriedOrder: 21
   sheathedPos: {x: -0.28, y: 1.16, z: 0}
   sheathedAngle: -104
   sheathedOrder: 19
@@ -523,12 +529,14 @@ MonoBehaviour:
   drawTime: 0.05
   frontOrder: 22
   chargeDrawOut: 0.04
-  slashMidPos: {x: 0.2, y: 1.7, z: 0}
-  slashEndPos: {x: 0.58, y: 1.28, z: 0}
+  cutStartPos: {x: 0.44, y: 1.85, z: 0}
+  cutMidPos: {x: 0.58, y: 1.88, z: 0}
+  cutEndPos: {x: 0.72, y: 1.9, z: 0}
+  cutSweepDegrees: 24
+  drawFlipEnd: 0.3
   slashEndAngle: 92
   slashTime: 0.14
   hitWindowStart: 0.1
-  bladeFrontSwitch: 0.45
   slashEase: 3.4
   sheatheTime: 0.12
   followVisualLean: 1
@@ -549,7 +557,11 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 73731e6b3df387548a225b10e9565a3a, type: 3}
   - {fileID: 21300000, guid: 55e9ef54cf52bea45ab8040239de1285, type: 3}
   iaiFlash: {fileID: 21300000, guid: c2710c75c3b5f7343a7fbe4d2f113efe, type: 3}
-  iaiHorizontalScale: 0.78
+  iaiHorizontalLength: 3.6
+  iaiHorizontalThickness: 0.38
+  iaiHorizontalForward: 1.85
+  iaiHorizontalY: 1.9
+  iaiHorizontalTilt: -12
   slashSpeedLines: 6
 --- !u!1 &8870091402584349833
 GameObject:
@@ -624,7 +636,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 20
-  m_Sprite: {fileID: 21300000, guid: 0d3fa94b7a654be4d950aac5efa86009, type: 3}
+  m_Sprite: {fileID: 21300000, guid: ca4d24ca21f5ced4cbe083c31ee8edb1, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

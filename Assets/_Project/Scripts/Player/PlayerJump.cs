@@ -137,6 +137,23 @@ namespace TiantaiDash
             }
         }
 
+        /// <summary>
+        /// 蓄力跳：**不看地面状态**，直接给一次竖直初速（空中也能跳）。
+        /// 只由 IaiCharge 在"蓄力中按跳"时调用，冷却由 IaiCharge 管。
+        /// </summary>
+        public void ChargeJump()
+        {
+            if (_rb == null) _rb = GetComponent<Rigidbody2D>();
+
+            _rb.velocity = new Vector2(_rb.velocity.x, jumpVelocity);
+            IsGrounded = false;
+            _lastGroundedTime = -99f;
+            _wasGrounded = false;
+
+            AudioManager.Play("sfx_jump", 0.8f, UnityEngine.Random.Range(0.98f, 1.08f));
+            OnJumped?.Invoke();
+        }
+
         public void ResetState()
         {
             IsGrounded = false;
