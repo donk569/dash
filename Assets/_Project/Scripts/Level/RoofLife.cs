@@ -21,7 +21,10 @@ namespace TiantaiDash
         Sprite[] _props, _signs, _windowNpc;
         Sprite _window;
 
-        void Start()
+        void Start() { Build(); }
+
+        /// <summary>编辑器烘焙时也调用这个。</summary>
+        public void Build()
         {
             var art = ArtLibrary.Instance;
             if (art == null) return;

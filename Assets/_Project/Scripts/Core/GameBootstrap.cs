@@ -139,11 +139,7 @@ namespace TiantaiDash
             if (flow == null) flow = gameObject.AddComponent<RunFlow>();
             if (playerHealth != null) flow.player = playerHealth.transform;
 
-            // 屋顶生活：给已有屋顶程序化加装饰和 NPC
-            if (GetComponent<RoofLife>() == null) gameObject.AddComponent<RoofLife>();
-
-            // 楼体立面变体 + 消防梯/管道/霓虹条
-            if (GetComponent<BuildingVariety>() == null) gameObject.AddComponent<BuildingVariety>();
+            // 屋顶生活 / 楼体立面：已经烘焙进场景（Tools/Bake Decor），运行时不再生成
 
             // 星星 + 烟花
             if (GetComponent<SkyLife>() == null) gameObject.AddComponent<SkyLife>();

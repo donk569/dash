@@ -13,7 +13,10 @@ namespace TiantaiDash
         [Range(0f, 1f)] public float pipeChance = 0.4f;
         [Range(0f, 1f)] public float neonChance = 0f;   // 不要墙上的霓虹条
 
-        void Start()
+        void Start() { Build(); }
+
+        /// <summary>编辑器烘焙时也调用这个（外面传入 rng 保持一致）。</summary>
+        public void Build()
         {
             var art = ArtLibrary.Instance;
             if (art == null) return;
