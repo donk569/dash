@@ -143,16 +143,6 @@ namespace TiantaiDash
             var gm = GameManager.Instance;
             if (gm == null || input == null) return;
 
-            if (gm.CurrentState == GameState.UpgradeSelecting)
-            {
-                // 右键 = 不选、直接离开（走"上平台 + 3-2-1-GO"流程）
-                if (input.RestartPressed) { LeavePanel(); return; }
-
-                int index = input.SelectUpgradeIndex;
-                if (index >= 0 && index < upgrades.CurrentChoices.Count) Choose(index);
-                return;
-            }
-
             if (gm.CurrentState == GameState.ShopOpen)
             {
                 // 右键 = 不买、直接离开
@@ -174,13 +164,7 @@ namespace TiantaiDash
                 levelManager.LoadNextLevel();
         }
 
-        void Choose(int index)
-        {
-            upgrades.ApplyUpgrade(index);
-            LeavePanel();
-        }
-
-        /// <summary>离开商店/增益面板：交给 RunFlow 站回安全平台并倒计时。</summary>
+        /// <summary>离开商店面板：交给 RunFlow 站回安全平台并倒计时。</summary>
         void LeavePanel()
         {
             var flow = RunFlow.Instance;
@@ -218,7 +202,6 @@ namespace TiantaiDash
 
             switch (gm.CurrentState)
             {
-                case GameState.UpgradeSelecting: DrawUpgradeSelect(gm, vw); break;
                 case GameState.ShopOpen: DrawShop(gm, vw); break;
                 case GameState.Ready: DrawCountdown(vw); break;
                 case GameState.Paused: DrawPanel(vw, "已暂停", "Esc 继续      右键 重开本关", Cyan); break;
@@ -661,60 +644,6 @@ namespace TiantaiDash
         }
 
         // ============================================================ 弹窗
-
-        void DrawUpgradeSelect(GameManager gm, float vw)
-        {
-            Backdrop(vw);
-
-            LabelShadow(new Rect(0f, 108f, vw, 60f), "选择一个增益", _title);
-            LabelShadow(new Rect(0f, 170f, vw, 26f), "点击卡片 或 按 1 / 2 / 3", _sub, TextDim, 1);
-
-            const float cardW = 304f;
-            const float cardH = 272f;
-            const float gap = 26f;
-
-            int count = upgrades.CurrentChoices.Count;
-            float totalW = count * cardW + (count - 1) * gap;
-            float startX = (vw - totalW) * 0.5f;
-
-            Color[] accents = { Cyan, Yellow, Purple };
-
-            for (int i = 0; i < count; i++)
-            {
-                var rect = new Rect(startX + i * (cardW + gap), 214f, cardW, cardH);
-                UpgradeDefinition def = upgrades.CurrentChoices[i];
-                bool hover = rect.Contains(Event.current.mousePosition);
-
-                Color accent = accents[i % accents.Length];
-                Panel(rect, hover ? Yellow : CyanMid, hover ? PanelBgHi : PanelBg);
-
-                // 顶部 4px 强调条（像素硬边，不做渐变）
-                Fill(new Rect(rect.x + 2f, rect.y + 2f, rect.width - 4f, 4f), accent);
-
-                // 第一行：序号（左）+ 等级（右）
-                PixelNumber(rect.x + 16f, rect.y + 20f, (i + 1).ToString(), 2.2f, accent);
-
-                int lv = upgrades.GetLevel(def.id);
-                string lvText = lv + "/" + def.maxLevel;
-                PixelNumber(rect.x + rect.width - 16f, rect.y + 22f, lvText, 1.8f, TextDim, true);
-
-                // 标题
-                LabelShadow(new Rect(rect.x + 16f, rect.y + 54f, rect.width - 32f, 40f), def.displayName, _cardTitle);
-
-                // 描述
-                LabelShadow(new Rect(rect.x + 24f, rect.y + 106f, rect.width - 48f, 120f), def.description, _cardDesc, TextDim, 1);
-
-                // 分割线
-                Fill(new Rect(rect.x + 20f, rect.y + rect.height - 56f, rect.width - 40f, 1f), CyanDim);
-
-                // 底部按键框（居中）
-                var keyBox = new Rect(rect.x + rect.width * 0.5f - 34f, rect.y + rect.height - 44f, 68f, 30f);
-                Panel(keyBox, hover ? Yellow : CyanMid, Deep, false);
-                LabelShadow(new Rect(keyBox.x, keyBox.y, keyBox.width, keyBox.height), "按" + (i + 1), _center, hover ? Yellow : White, 1);
-
-                if (GUI.Button(rect, GUIContent.none, GUIStyle.none)) Choose(i);
-            }
-        }
 
         /// <summary>金币商店：布局和升级三选一一致，但卡片带价格，买不起会整体压暗。</summary>
         void DrawShop(GameManager gm, float vw)

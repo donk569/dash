@@ -150,15 +150,7 @@ namespace TiantaiDash
                 killReward.iai = iaiCharge;
             }
 
-            if (tracker != null && upgrades != null)
-            {
-                tracker.OnNodeReached += index =>
-                {
-                    if (gameManager == null || !gameManager.IsPlaying) return;
-                    upgrades.RollUpgrades();
-                    gameManager.SetState(GameState.UpgradeSelecting);
-                };
-            }
+            // 增益节点已移除：升级只能通过商店买（ShopIcon → UpgradeManager.RollUpgrades）
 
             if (playerHealth != null)
             {

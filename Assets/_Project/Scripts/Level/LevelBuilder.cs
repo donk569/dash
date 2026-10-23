@@ -17,7 +17,6 @@ namespace TiantaiDash
         public float StartX;
         public float StartY;
         public float PortalX;
-        public float[] NodeDistances;
         public Transform Root;
         public readonly List<EnemyController> Enemies = new List<EnemyController>();
         public readonly List<DashMarker> Markers = new List<DashMarker>();
@@ -134,20 +133,8 @@ namespace TiantaiDash
             _result.StartX = startX;
             _result.StartY = _platforms[0].Y;
             _result.PortalX = portalX;
-            _result.NodeDistances = NodeDistances();
 
             return _result;
-        }
-
-        public float[] NodeDistances()
-        {
-            var list = new List<float>();
-            for (int i = 0; i < _platforms.Count; i++)
-            {
-                if (!_platforms[i].IsNode) continue;
-                list.Add(_platforms[i].X + _platforms[i].Width * 0.5f);
-            }
-            return list.ToArray();
         }
 
         // ---------------- 段落（全部按"冲刺驱动"设计） ----------------
@@ -303,18 +290,6 @@ namespace TiantaiDash
             piece.isNode = def.IsNode;
             piece.Apply();
             _result.Platforms.Add(piece);
-
-            if (def.IsNode)
-            {
-                var node = go.GetComponentInChildren<UpgradeNode>();
-                if (node == null)
-                {
-                    var nodeGo = new GameObject("UpgradeNode");
-                    nodeGo.transform.SetParent(go.transform, false);
-                    node = nodeGo.AddComponent<UpgradeNode>();
-                }
-                node.triggerOffsetX = 0f;
-            }
 
             if (decorate)
             {
