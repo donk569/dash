@@ -81,6 +81,11 @@ namespace TiantaiDash.EditorTools
                 return;
             }
 
+            // ---- 先记下场景里现有的商店 ----
+            // Level 会被整体删掉重建，不记下来你手动摆的商店就全没了。
+            // 商店**只认场景里摆好的 ShopIcon**，不再按平台位置自动撒。
+            List<ShopSpot> shopSpots = CollectShopSpots();
+
             // ---- 清理旧东西 ----
             DestroyRoot("Level");
             DestroyRoot("Player");
@@ -162,6 +167,7 @@ namespace TiantaiDash.EditorTools
             boot.dashController = player.GetComponent<DashController>();
 
             PlacePickups(lib, result, result.Root != null ? result.Root : game.transform);
+            RestoreShops(lib, shopSpots, result.Root != null ? result.Root : game.transform);
             MakeSomeChasers(result);
 
             tracker.CollectFromScene();
@@ -630,7 +636,11 @@ namespace TiantaiDash.EditorTools
 
         // =============================================================== 场景
 
-        /// <summary>沿平台撒金币和商店招牌。金币间距按平台宽度自动排，不会挤在边上。</summary>
+        /// <summary>
+        /// 沿平台撒金币。金币间距按平台宽度自动排，不会挤在边上。
+        /// **商店不在这里生成** —— 商店位置完全由场景里手动摆放的 ShopIcon 决定
+        /// （烘焙时会原样保留，见 CollectShopSpots / RestoreShops）。
+        /// </summary>
         static void PlacePickups(ArtLibrary art, LevelBuildResult result, Transform parent)
         {
             if (result == null || result.Platforms == null) return;
@@ -657,12 +667,6 @@ namespace TiantaiDash.EditorTools
                         SpawnCoin(root, art, new Vector3(x, p.transform.position.y + 1.7f, 0f));
                     }
                 }
-
-                // 商店：每 7 块平台一个，要够宽
-                if (i % 7 == 4 && p.width >= 16f)
-                {
-                    SpawnShop(root, art, new Vector3(p.transform.position.x + halfW - 5f, p.transform.position.y, 0f));
-                }
             }
         }
 
@@ -683,7 +687,65 @@ namespace TiantaiDash.EditorTools
             go.AddComponent<Coin>();
         }
 
-        static void SpawnShop(Transform parent, ArtLibrary art, Vector3 pos)
+        /// <summary>一家商店的烘焙快照（Level 会被整体重建，靠它把商店放回原位）。</summary>
+        class ShopSpot
+        {
+            public Vector3 position;
+            public int price;
+            public float scale = 1f;
+        }
+
+        /// <summary>记录场景里现有的所有商店。玩家在 Scene 里加/删/拖商店，重烘焙都跟着走。</summary>
+        static List<ShopSpot> CollectShopSpots()
+        {
+            var list = new List<ShopSpot>();
+            ShopIcon[] shops = Object.FindObjectsOfType<ShopIcon>();
+            for (int i = 0; i < shops.Length; i++)
+            {
+                ShopIcon s = shops[i];
+                if (s == null) continue;
+                list.Add(new ShopSpot
+                {
+                    position = s.transform.position,
+                    price = s.price,
+                    scale = s.transform.localScale.x,
+                });
+            }
+
+            // 按 X 排一下，烘焙后层级顺序跟关卡进度一致，找起来方便
+            list.Sort((a, b) => a.position.x.CompareTo(b.position.x));
+            return list;
+        }
+
+        /// <summary>按快照把商店放回场景。快照为空就一家都不生成（不会凭空多出商店）。</summary>
+        static void RestoreShops(ArtLibrary art, List<ShopSpot> spots, Transform parent)
+        {
+            if (spots == null || spots.Count == 0)
+            {
+                Debug.Log("[Forge] 场景里没有商店，未生成任何商店。想加商店：在 Scene 里复制一个 Shop 对象拖到目标位置即可。");
+                return;
+            }
+
+            var root = new GameObject("Shops").transform;
+            root.SetParent(parent, false);
+
+            for (int i = 0; i < spots.Count; i++)
+            {
+                ShopSpot spot = spots[i];
+                GameObject go = SpawnShop(root, art, spot.position);
+                if (go == null) continue;
+
+                ShopIcon icon = go.GetComponent<ShopIcon>();
+                if (icon != null) icon.price = spot.price;
+
+                if (spot.scale > 0.01f && !Mathf.Approximately(spot.scale, 1f))
+                    go.transform.localScale = new Vector3(spot.scale, spot.scale, 1f);
+            }
+
+            Debug.Log("[Forge] 还原商店 " + spots.Count + " 家（位置来自场景中手动摆放的 Shop 对象）");
+        }
+
+        static GameObject SpawnShop(Transform parent, ArtLibrary art, Vector3 pos)
         {
             var go = new GameObject("Shop");
             go.transform.SetParent(parent, false);
@@ -713,6 +775,8 @@ namespace TiantaiDash.EditorTools
 
             var shop = go.AddComponent<ShopIcon>();
             shop.price = 5;
+
+            return go;
         }
 
         /// <summary>把 40% 的敌人改成追踪型，剩下的保持巡逻。</summary>
