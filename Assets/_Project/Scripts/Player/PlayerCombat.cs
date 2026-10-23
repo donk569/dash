@@ -169,7 +169,7 @@ namespace TiantaiDash
 
                     // 玩家劈到就死：不再按伤害结算（蓄力只影响范围/特效，不影响伤害）
                     EnemyHealth enemy = hits[i].GetComponentInParent<EnemyHealth>();
-                    if (enemy != null) enemy.TakeDamage(Mathf.Max(1, enemy.CurrentHealth), true);
+                    if (enemy != null) enemy.TakeDamage(Mathf.Max(1, enemy.CurrentHealth), true, EnemyHealth.HitSource.Sword);
                     else target.TakeDamage(9999);
 
                     CameraFollow.Shake(0.28f);

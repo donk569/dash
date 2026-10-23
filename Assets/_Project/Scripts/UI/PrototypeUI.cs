@@ -27,6 +27,7 @@ namespace TiantaiDash
         public LevelManager levelManager;
         public PlayerWallet wallet;
         public IaiCharge iai;
+        public ScoreKeeper score;
 
         [Header("商店")]
         [Tooltip("由 ShopIcon 在打开时写入")]
@@ -375,6 +376,58 @@ namespace TiantaiDash
 
         // ============================================================ HUD
 
+        /// <summary>
+        /// 连击表现：角色头顶 `x12` + 右侧倍率竖条。
+        /// 倍率颜色 白 → 黄 → 紫 → 红；断链前 0.6s 数字抖动并转红（ChainWarning）。
+        /// </summary>
+        void DrawCombo(float vw)
+        {
+            float m = score.Multiplier;
+
+            Color tier;
+            if (m >= 4f) tier = new Color32(255, 92, 96, 255);        // 红
+            else if (m >= 3f) tier = Purple;                          // 紫
+            else if (m >= 1.75f) tier = Yellow;                       // 黄
+            else tier = White;                                        // 白
+
+            bool warn = score.ChainWarning;
+            Color chainColor = warn ? new Color32(255, 92, 96, 255) : tier;
+
+            // ---- 角色头顶：世界坐标投影到虚拟屏幕坐标 ----
+            if (health != null && Camera.main != null)
+            {
+                float scale = Screen.height / VirtualHeight;
+                Vector3 world = health.transform.position + Vector3.up * 3.4f;
+                Vector3 sp = Camera.main.WorldToScreenPoint(world);
+
+                if (sp.z > 0f)
+                {
+                    float vx = sp.x / Mathf.Max(0.0001f, scale);
+                    float vy = (Screen.height - sp.y) / Mathf.Max(0.0001f, scale);
+
+                    // 告警时高频抖动，像数字"快撑不住了"
+                    float jitter = warn ? Mathf.Sin(Time.unscaledTime * 62f) * 2.5f : 0f;
+
+                    string txt = "x" + score.Chain;
+                    float w = PixelNumberWidth(txt, 3f);
+                    PixelNumber(vx - w * 0.5f + jitter, vy - 16f + jitter, txt, 3f, chainColor);
+                }
+            }
+
+            // ---- 右侧：倍率竖条（长度 = 断链倒计时剩余比例）----
+            var bar = new Rect(vw - 34f, VirtualHeight * 0.34f, 14f, 190f);
+            Panel(bar, CyanDim, PanelBg, false);
+
+            float ratio = score.ChainRatio;
+            float fillH = (bar.height - 4f) * ratio;
+            if (fillH > 0.5f)
+                Fill(new Rect(bar.x + 2f, bar.y + bar.height - 2f - fillH, bar.width - 4f, fillH), tier);
+
+            string mtxt = "x" + m.ToString("0.0");
+            float mw = PixelNumberWidth(mtxt, 2.4f);
+            PixelNumber(vw - 44f - mw, bar.y - 34f, mtxt, 2.4f, tier);
+        }
+
         void DrawHud(GameManager gm, float vw)
         {
             // ---- 最上方中间：击杀进度（每 N 杀回 1 血，满 N 重新计数）----
@@ -431,6 +484,9 @@ namespace TiantaiDash
                 PixelNumber(20f, 78f, dist, 2.2f, Cyan);
                 LabelShadow(new Rect(20f + PixelNumberWidth(dist, 2.2f) + 10f, 74f, 60f, 24f), "米", _small, TextDim, 1);
             }
+
+            // ---- 连击 + 倍率 ----
+            if (score != null && score.Chain > 0) DrawCombo(vw);
 
             // ---- 用时（右上）----
             string time = gm.RunTime.ToString("0.0") + "s";
@@ -725,20 +781,44 @@ namespace TiantaiDash
         void DrawCompleted(GameManager gm, float vw)
         {
             Backdrop(vw);
-            LabelShadow(new Rect(0f, 150f, vw, 64f), "通关", _title, Cyan, 3);
 
-            var panel = new Rect(vw * 0.5f - 340f, 236f, 680f, 210f);
+            ScoreRank rank = score != null ? score.Rank : ScoreRank.C;
+            Color rankColor;
+            switch (rank)
+            {
+                case ScoreRank.S: rankColor = new Color32(255, 209, 102, 255); break;   // 金
+                case ScoreRank.A: rankColor = Cyan; break;                              // 青
+                case ScoreRank.B: rankColor = Purple; break;                            // 紫
+                default: rankColor = new Color32(150, 160, 176, 255); break;            // 灰
+            }
+
+            // ---- 评级大字 ----
+            LabelShadow(new Rect(0f, 66f, vw, 100f), rank.ToString(), _title, rankColor, 6);
+            LabelShadow(new Rect(0f, 166f, vw, 28f), "通关", _sub, TextDim, 2);
+
+            // ---- 总分 + 新纪录 ----
+            if (score != null)
+            {
+                string total = score.Score.ToString();
+                float tw = PixelNumberWidth(total, 4.6f);
+                PixelNumber(vw * 0.5f - tw * 0.5f, 204f, total, 4.6f, White);
+
+                if (score.NewRecord)
+                    LabelShadow(new Rect(0f, 252f, vw, 24f), "NEW RECORD", _center, Yellow, 2);
+            }
+
+            var panel = new Rect(vw * 0.5f - 340f, 288f, 680f, 210f);
             Panel(panel, Cyan, PanelBg);
 
             Fill(new Rect(panel.x + 2f, panel.y + 2f, panel.width - 4f, 4f), Cyan);
 
-            string[] keys = { "用时", "受伤", "冲刺", "攻击" };
+            string[] keys = { "最高连击", "击杀", "受伤", "用时" };
             string[] vals =
             {
-                gm.RunTime.ToString("0.0") + "s",
+                (score != null ? score.BestChain : 0).ToString(),
+                (killReward != null ? killReward.KillCount : 0).ToString(),
                 (health != null ? health.DamageTakenCount : 0).ToString(),
-                (dash != null ? dash.DashCount : 0).ToString(),
-                (combat != null ? combat.AttackCount : 0).ToString(),
+                gm.RunTime.ToString("0.0") + "s",
             };
 
             float colW = panel.width / 4f;
@@ -758,7 +838,9 @@ namespace TiantaiDash
 
             Fill(new Rect(panel.x + 24f, panel.y + 130f, panel.width - 48f, 1f), CyanDim);
 
-            LabelShadow(new Rect(panel.x, panel.y + 146f, panel.width, 26f), "右键 重开      Enter 下一关（首版仅一关）", _center, TextDim);
+            string best = score != null ? "最高分 " + score.HighScore + "      右键 重开      Enter 下一关（首版仅一关）"
+                                        : "右键 重开      Enter 下一关（首版仅一关）";
+            LabelShadow(new Rect(panel.x, panel.y + 146f, panel.width, 26f), best, _center, TextDim);
         }
 
         void DrawPanel(float vw, string title, string hint, Color accent, string sub = null)

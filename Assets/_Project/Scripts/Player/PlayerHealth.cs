@@ -14,6 +14,8 @@ namespace TiantaiDash
 
         public event Action<int, int> OnHealthChanged;
         public event Action OnDeath;
+        /// <summary>真正扣到血之后触发（无敌帧内、冲刺无敌期内都不算）。计分器用它断链。</summary>
+        public event Action OnDamaged;
 
         SpriteRenderer[] _renderers;
         float _invulnerableUntil;
@@ -62,6 +64,7 @@ namespace TiantaiDash
             CameraFollow.Shake(0.55f);
             _invulnerableUntil = Time.time + invulnerableDuration;
             OnHealthChanged?.Invoke(CurrentHealth, maxHealth);
+            OnDamaged?.Invoke();
 
             if (CurrentHealth > 0) return;
 

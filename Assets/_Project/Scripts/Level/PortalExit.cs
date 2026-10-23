@@ -27,6 +27,15 @@ namespace TiantaiDash
 
             _fired = true;
             AudioManager.Play("sfx_portal", 1f);
+
+            // 先结账再加通关奖励，结算面板才拿得到最终分和评级
+            var score = FindObjectOfType<ScoreKeeper>();
+            if (score != null)
+            {
+                score.AddClearBonus();
+                score.CommitHighScore();
+            }
+
             gm.SetState(GameState.Completed);
         }
     }

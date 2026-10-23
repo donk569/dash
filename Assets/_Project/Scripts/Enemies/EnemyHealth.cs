@@ -6,10 +6,24 @@ namespace TiantaiDash
     /// <summary>怪物血量：2 血、受击白闪、死亡关碰撞并淡出。</summary>
     public class EnemyHealth : MonoBehaviour, IDamageable
     {
+        /// <summary>致死伤害的来源。计分器靠它区分"斩 / 冲 / 踩"。</summary>
+        public enum HitSource
+        {
+            Unknown,
+            Sword,
+            Dash,
+            Stomp,
+            Shockwave,
+            Other,
+        }
+
         public int maxHealth = 2;
 
         public int CurrentHealth { get; private set; }
         public bool IsAlive => CurrentHealth > 0;
+
+        /// <summary>最后一次受击的来源（致死时就是击杀方式）。</summary>
+        public HitSource LastHitSource { get; private set; }
 
         public event Action<EnemyHealth> OnDied;
         /// <summary>被玩家打死时才触发（击杀冲刺奖励用）。环境伤害走 OnDied。</summary>
@@ -49,18 +63,25 @@ namespace TiantaiDash
 
         public void TakeDamage(int amount)
         {
-            TakeDamage(amount, false);
+            TakeDamage(amount, false, HitSource.Other);
         }
 
         /// <summary>
-        /// 带来源的受伤入口。玩家侧的伤害（挥剑 / 冲刺撞击 / 冲击波）必须传 byPlayer = true，
+        /// 带来源的受伤入口。玩家侧的伤害（挥剑 / 冲刺撞击 / 冲击波 / 踩踏）必须传 byPlayer = true，
         /// 否则击杀不会算到玩家头上、也就不会触发击杀冲刺。
         /// </summary>
         public void TakeDamage(int amount, bool byPlayer)
         {
+            TakeDamage(amount, byPlayer, HitSource.Other);
+        }
+
+        /// <summary>带伤害来源的完整入口。计分器用 LastHitSource 判断这一下是被什么打死的。</summary>
+        public void TakeDamage(int amount, bool byPlayer, HitSource source)
+        {
             if (!IsAlive) return;
 
             if (byPlayer) DiedByPlayer = true;
+            LastHitSource = source;
             CurrentHealth -= amount;
             _flashUntil = Time.time + 0.08f;
             if (_sr != null) _sr.color = Color.white;

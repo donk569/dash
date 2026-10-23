@@ -16,6 +16,7 @@ namespace TiantaiDash
         public LevelManager levelManager;
         public DistanceTracker tracker;
         public UpgradeManager upgrades;
+        public ScoreKeeper score;
         public FallDetector fallDetector;
         public AudioManager audioManager;
 
@@ -66,6 +67,7 @@ namespace TiantaiDash
             if (levelManager == null) levelManager = Pick(GetComponent<LevelManager>(), FindObjectOfType<LevelManager>());
             if (tracker == null) tracker = Pick(GetComponent<DistanceTracker>(), FindObjectOfType<DistanceTracker>());
             if (upgrades == null) upgrades = Pick(GetComponent<UpgradeManager>(), FindObjectOfType<UpgradeManager>());
+            if (score == null) score = Pick(GetComponent<ScoreKeeper>(), FindObjectOfType<ScoreKeeper>());
             if (fallDetector == null) fallDetector = Pick(GetComponent<FallDetector>(), FindObjectOfType<FallDetector>());
             if (audioManager == null) audioManager = Pick(GetComponent<AudioManager>(), FindObjectOfType<AudioManager>());
 
@@ -133,6 +135,10 @@ namespace TiantaiDash
                 ui.iai = iaiCharge;
                 ui.killReward = killReward;
             }
+
+            // 计分器：场景里没挂就补一个（纯叠加，不依赖场景布置）
+            if (score == null) score = gameObject.AddComponent<ScoreKeeper>();
+            if (ui != null) ui.score = score;
 
             // 离店后的 3-2-1-GO 流程（组件挂在 Game 上，不需要额外往场景里拖东西）
             RunFlow flow = GetComponent<RunFlow>();

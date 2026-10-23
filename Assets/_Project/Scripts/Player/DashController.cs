@@ -164,7 +164,7 @@ namespace TiantaiDash
 
                 // 撞到即死：直接按当前血量结算，走正常的死亡流程（喷血 / 击杀奖励 / 音效）
                 EnemyHealth enemy = hits[i].GetComponentInParent<EnemyHealth>();
-                if (enemy != null) enemy.TakeDamage(Mathf.Max(1, enemy.CurrentHealth), true);
+                if (enemy != null) enemy.TakeDamage(Mathf.Max(1, enemy.CurrentHealth), true, EnemyHealth.HitSource.Dash);
                 else target.TakeDamage(9999);
 
                 CameraFollow.Shake(0.3f);
@@ -198,7 +198,7 @@ namespace TiantaiDash
                 if (target == null || !target.IsAlive) continue;
 
                 EnemyHealth enemy = hits[i].GetComponentInParent<EnemyHealth>();
-                if (enemy != null) enemy.TakeDamage(1, true);
+                if (enemy != null) enemy.TakeDamage(1, true, EnemyHealth.HitSource.Shockwave);
                 else target.TakeDamage(1);
             }
         }

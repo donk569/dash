@@ -125,6 +125,7 @@ namespace TiantaiDash.EditorTools
             LevelManager levelManager = GetOrAdd<LevelManager>(game);
             DistanceTracker tracker = GetOrAdd<DistanceTracker>(game);
             UpgradeManager upgrades = GetOrAdd<UpgradeManager>(game);
+            ScoreKeeper score = GetOrAdd<ScoreKeeper>(game);
             FallDetector fall = GetOrAdd<FallDetector>(game);
             TimeJuice juice = GetOrAdd<TimeJuice>(game);
             PrototypeUI ui = GetOrAdd<PrototypeUI>(game);
@@ -154,6 +155,7 @@ namespace TiantaiDash.EditorTools
             boot.levelManager = levelManager;
             boot.tracker = tracker;
             boot.upgrades = upgrades;
+            boot.score = score;
             boot.fallDetector = fall;
             boot.audioManager = audio;
             boot.ui = ui;
