@@ -14550,6 +14550,7 @@ GameObject:
   - component: {fileID: 658396473}
   - component: {fileID: 658396482}
   - component: {fileID: 658396483}
+  - component: {fileID: 658396484}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -14574,6 +14575,7 @@ MonoBehaviour:
   levelManager: {fileID: 658396479}
   tracker: {fileID: 658396478}
   upgrades: {fileID: 658396477}
+  score: {fileID: 658396484}
   fallDetector: {fileID: 658396476}
   audioManager: {fileID: 658396473}
   playerHealth: {fileID: 912599417}
@@ -14692,6 +14694,7 @@ MonoBehaviour:
   levelManager: {fileID: 0}
   wallet: {fileID: 658396482}
   iai: {fileID: 912599415}
+  score: {fileID: 0}
   currentShopPrice: 3
   heart: {fileID: 21300000, guid: bc48cef240e66c543a71190569f6aeed, type: 3}
   coinSprite: {fileID: 0}
@@ -14753,9 +14756,6 @@ MonoBehaviour:
   player: {fileID: 912599421}
   startX: 5
   endX: 1664.9283
-  nodeDistances:
-  - 539.7305
-  - 1126.3386
   autoCollect: 1
 --- !u!114 &658396479
 MonoBehaviour:
@@ -14828,6 +14828,33 @@ MonoBehaviour:
   combat: {fileID: 0}
   killsPerHeal: 3
   health: {fileID: 0}
+--- !u!114 &658396484
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 658396470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3246059932874a439ff1d373841a9e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  chainWindow: 3.5
+  warnWindow: 0.6
+  multiplierStep: 0.25
+  multiplierMax: 5
+  nearMissInner: 0.9
+  nearMissOuter: 1.6
+  nearMissRepeat: 2
+  scanInterval: 0.15
+  clearNoDamage: 1000
+  clearNoDamageNoFall: 1500
+  highScoreKey: HighScore
+  health: {fileID: 0}
+  jump: {fileID: 0}
+  dash: {fileID: 0}
+  iai: {fileID: 0}
 --- !u!1001 &679829326
 PrefabInstance:
   m_ObjectHideFlags: 0
