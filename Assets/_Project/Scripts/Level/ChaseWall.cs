@@ -53,9 +53,8 @@ namespace TiantaiDash
         static readonly Color32 CGlow = new Color32(42, 58, 168, 255);     // 靛蓝
         static readonly Color32 CHot = new Color32(74, 104, 232, 255);    // 亮蓝紫
         static readonly Color32 CCore = new Color32(122, 148, 224, 255);   // 前沿亮边（不刺眼）
-        static readonly Color32 CSpark = new Color32(143, 230, 255, 255);  // 青白火花
         static readonly Color32 CScan = new Color32(168, 220, 255, 255);   // 扫描线（偏青，对比强）
-        static readonly Color32 CChunk = new Color32(184, 200, 255, 255);  // 前沿碎块
+        static readonly Color32 CMote = new Color32(96, 146, 216, 255);    // 墙内光点（压暗，不抢眼）
 
         /// <summary>1×1 世界单位的纯白 sprite，用 color 染色。</summary>
         static Sprite UnitSprite
@@ -102,17 +101,8 @@ namespace TiantaiDash
             AddSlab("Hot", CHot, 0.70f, 0.96f, 1.50f, 0.13f);
             _core = AddSlab("Core", CCore, 0.42f, 0.86f, 2.00f, 0.19f);
 
-            // 前沿碎块：小方块甩在最亮的边缘外，做"正在崩"的毛边（大小/位置都拉开差距才不像规则图案）
-            for (int i = 0; i < 11; i++)
-            {
-                float h = height * Random.Range(0.05f, 0.27f);
-                var chunk = MakeSlab("Chunk", CChunk, width * Random.Range(0.035f, 0.16f), h);
-                chunk.baseX = width * Random.Range(0.43f, 0.63f);
-                chunk.baseY = Random.Range(-height * 0.46f, height * 0.46f);
-                chunk.phase = Random.Range(0f, 6.28f);
-                chunk.amp = Random.Range(0.3f, 1.2f);
-                chunk.wobble = Random.Range(2.5f, 6f);
-            }
+            // 前沿碎块已移除：那些浅色小方块上下浮动，在右边缘看着像"白色升降物"，很扎眼。
+            // 边缘的交错感改由 5 层不同的高度/振幅差来做（见上方 AddSlab 的 hScale 与 amp）。
 
             // 扫描线：两条不同速度、不同方向的亮线扫过墙面（赛博感的主力）
             _scanA = MakeDecor("ScanA", CScan, 33);
@@ -121,19 +111,19 @@ namespace TiantaiDash
             _scanB = MakeDecor("ScanB", new Color32(206, 186, 255, 255), 33);
             _scanB.transform.localScale = new Vector3(width * 0.82f, 0.18f, 1f);
 
-            // 前沿光点：从墙里往上飘，越靠中间越亮越大
-            for (int i = 0; i < 8; i++)
+            // 内部光点：只在墙体里面上浮（不要飘到前沿外面，否则会在右边缘变成一串"白色升降物"）
+            for (int i = 0; i < 7; i++)
             {
-                SpriteRenderer sr = MakeDecor("Mote" + i, CSpark, 34);
-                sr.transform.localScale = Vector3.one * 0.4f;
+                SpriteRenderer sr = MakeDecor("Mote" + i, CMote, 31);
+                sr.transform.localScale = Vector3.one * 0.3f;
 
                 var m = new Mote();
                 m.t = sr.transform;
-                m.baseX = width * Random.Range(0.28f, 0.56f);
+                m.baseX = width * Random.Range(-0.02f, 0.20f);
                 m.y = Random.Range(-height * 0.5f, height * 0.5f);
-                m.speed = Random.Range(3.5f, 9f);
+                m.speed = Random.Range(2.5f, 6f);
                 m.phase = Random.Range(0f, 6.28f);
-                m.sway = Random.Range(0.6f, 1.6f);
+                m.sway = Random.Range(0.5f, 1.3f);
                 _motes.Add(m);
             }
         }
@@ -229,7 +219,7 @@ namespace TiantaiDash
                 m.t.localPosition = new Vector3(x, m.y, 0f);
 
                 float fade = Mathf.Clamp01(1f - Mathf.Abs(m.y) / (height * 0.5f));
-                float s = (0.16f + 0.62f * fade) * _fadeAlpha;
+                float s = (0.08f + 0.30f * fade) * _fadeAlpha;
                 m.t.localScale = new Vector3(s, s, 1f);
             }
 
