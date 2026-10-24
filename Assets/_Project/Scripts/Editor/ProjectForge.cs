@@ -933,6 +933,7 @@ namespace TiantaiDash.EditorTools
             if (audio == null) return;
 
             audio.bgm = AssetDatabase.LoadAssetAtPath<AudioClip>(AudioRoot + "/bgm_loop.wav");
+            audio.chaseBgm = AssetDatabase.LoadAssetAtPath<AudioClip>(AudioRoot + "/bgm_chase.ogg");
 
             string[] ids =
             {

@@ -14620,6 +14620,7 @@ MonoBehaviour:
   masterVolume: 0.85
   bgmVolume: 0.3
   bgm: {fileID: 8300000, guid: 527844e87cc18414eb23469338389295, type: 3}
+  chaseBgm: {fileID: 8300000, guid: d6c6e7155aab69a4abef72773d399009, type: 3}
   sfx:
   - id: sfx_dash
     clip: {fileID: 8300000, guid: 801cb21a5283fd74f964eed4494bb057, type: 3}
@@ -15763,10 +15764,11 @@ MonoBehaviour:
   startX: 1290
   endX: 1440
   warnTime: 3
-  initialGap: 26
-  wallSpeed: 20
-  catchUpSpeed: 24
-  lagBoost: 30
+  initialGap: 16
+  wallSpeed: 21
+  catchUpSpeed: 30
+  lagBoost: 22
+  keepUpRatio: 0.92
   catchMargin: 0.5
   verticalOffset: 5
   chaseDashCooldown: 2.5
@@ -37709,7 +37711,7 @@ Transform:
   m_GameObject: {fileID: 1990518880}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 500, y: 0, z: 0}
+  m_LocalPosition: {x: 415, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -37727,13 +37729,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f28fb6d0364fa84bb2d87f6aa653de4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  startX: 500
+  startX: 415
   endX: 615
   warnTime: 3
-  initialGap: 26
-  wallSpeed: 19.5
-  catchUpSpeed: 24
-  lagBoost: 30
+  initialGap: 16
+  wallSpeed: 21
+  catchUpSpeed: 30
+  lagBoost: 22
+  keepUpRatio: 0.92
   catchMargin: 0.5
   verticalOffset: 5
   chaseDashCooldown: 2.5

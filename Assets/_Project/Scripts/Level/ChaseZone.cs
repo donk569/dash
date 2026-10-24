@@ -31,14 +31,16 @@ namespace TiantaiDash
         public float warnTime = 3f;
 
         [Header("墙")]
-        [Tooltip("墙一开始出现在玩家身后多远")]
-        public float initialGap = 26f;
-        [Tooltip("墙面推进速度（跑速约 18，19.5 表示停一下就死）")]
-        public float wallSpeed = 19.5f;
+        [Tooltip("墙一开始出现在玩家身后多远（要小于半屏宽约 18u，否则玩家看不见墙）")]
+        public float initialGap = 16f;
+        [Tooltip("墙面推进速度（跑速约 18，21 表示每秒逼近 3u）")]
+        public float wallSpeed = 21f;
         [Tooltip("落后超过 lagBoost 时的加速速度（防挂机）")]
-        public float catchUpSpeed = 24f;
+        public float catchUpSpeed = 30f;
         [Tooltip("落后多少开始加速")]
-        public float lagBoost = 30f;
+        public float lagBoost = 22f;
+        [Tooltip("墙速至少跟上玩家速度的这个比例 —— 玩家冲刺时墙也跟着加速，不会被甩出画面")]
+        [Range(0.5f, 1f)] public float keepUpRatio = 0.92f;
         [Tooltip("墙追上玩家到前方多少判定死亡")]
         public float catchMargin = 0.5f;
         [Tooltip("墙相对玩家的高度偏移（让墙覆盖屏幕）")]
@@ -70,6 +72,7 @@ namespace TiantaiDash
         bool _reentryRequired;
 
         Transform _player;
+        Rigidbody2D _playerRb;
         DashController _dash;
         KillReward _killReward;
 
@@ -88,8 +91,9 @@ namespace TiantaiDash
         public bool IsHot => _phase == Phase.Warning || _phase == Phase.Chasing;
         /// <summary>预警剩余秒数。</summary>
         public float WarnLeft => _warnLeft;
-        /// <summary>墙落后玩家多少距离（HUD 可以显示压迫感）。</summary>
-        public float WallDistance => _player != null ? _player.position.x - _wallX : 0f;
+        /// <summary>墙落后玩家多少距离（墙还没出现时返回 0）。</summary>
+        public float WallDistance =>
+            _wall == null || _player == null ? 0f : _player.position.x - _wallX;
 
         void Awake()
         {
@@ -103,6 +107,7 @@ namespace TiantaiDash
                 var hp = FindObjectOfType<PlayerHealth>();
                 if (hp != null) _player = hp.transform;
             }
+            if (_playerRb == null && _player != null) _playerRb = _player.GetComponent<Rigidbody2D>();
             if (_dash == null) _dash = FindObjectOfType<DashController>();
             if (_killReward == null) _killReward = FindObjectOfType<KillReward>();
         }
@@ -171,6 +176,7 @@ namespace TiantaiDash
 
             CameraFollow.SetZoom(zoomIn);
             AudioManager.Play("sfx_iai_full", 0.75f, 1.15f);
+            AudioManager.PlayChaseBgm(true, 0.5f);   // 预警就开始切，等墙真的出现时音乐已经到位
             _shakeTimer = shakeInterval;
         }
 
@@ -193,8 +199,17 @@ namespace TiantaiDash
         {
             float px = _player.position.x;
 
-            // 落后太多 → 提速（防挂机、也防止玩家被甩开太远显得没压迫感）
+            // 基础速度 → 落后太多就提速（防挂机）→ 再兜一个"跟速下限"：
+            // 玩家冲刺 46.8 时墙也跟着到 43，只慢不到 4u/s，冲刺甩不开也看不到"墙消失"，
+            // 这样整段都在视野内，压迫感是连续的。
             float spd = (px - _wallX > lagBoost) ? catchUpSpeed : wallSpeed;
+
+            if (_playerRb != null)
+            {
+                float pvx = Mathf.Abs(_playerRb.velocity.x);
+                spd = Mathf.Max(spd, pvx * keepUpRatio);
+            }
+
             _wallSlide = spd;
             _wallX += spd * dt;
 
@@ -228,6 +243,7 @@ namespace TiantaiDash
             if (_wall != null) _wall.BeginFade();
             RestoreRules();
             CameraFollow.SetZoom(0f);
+            AudioManager.PlayChaseBgm(false, 0.6f);
             AudioManager.Play("sfx_portal", 0.7f, 1.3f);
         }
 
@@ -265,6 +281,7 @@ namespace TiantaiDash
             RestoreRules();
             CameraFollow.SetZoom(0f);
             CameraFollow.Shake(0.6f);
+            AudioManager.PlayChaseBgm(false, 0.3f);
             AudioManager.Play("sfx_hurt", 1f, 0.7f);
 
             if (Current == this) Current = null;
@@ -280,6 +297,7 @@ namespace TiantaiDash
         {
             RestoreRules();
             CameraFollow.SetZoom(0f);
+            AudioManager.PlayChaseBgm(false, 0.4f);
 
             if (_wall != null) Destroy(_wall.gameObject);
             _wall = null;

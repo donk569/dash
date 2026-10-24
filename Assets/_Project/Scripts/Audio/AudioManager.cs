@@ -28,6 +28,8 @@ namespace TiantaiDash
 
         [Header("BGM")]
         public AudioClip bgm;
+        [Tooltip("追逐段专用 BGM（进段交叉淡入、出段淡出）；留空则追逐段沿用常驻 BGM")]
+        public AudioClip chaseBgm;
 
         [Header("音效（id 必须和代码里的一致）")]
         public SfxClip[] sfx =
@@ -50,6 +52,8 @@ namespace TiantaiDash
 
         AudioSource[] _sources;
         AudioSource _bgmSource;
+        AudioSource _chaseSource;
+        Coroutine _bgmFade;
         int _next;
 
         readonly Dictionary<string, SfxClip> _map = new Dictionary<string, SfxClip>();
@@ -90,6 +94,12 @@ namespace TiantaiDash
             _bgmSource.loop = true;
             _bgmSource.spatialBlend = 0f;
             _bgmSource.volume = bgmVolume;
+
+            _chaseSource = gameObject.AddComponent<AudioSource>();
+            _chaseSource.playOnAwake = false;
+            _chaseSource.loop = true;
+            _chaseSource.spatialBlend = 0f;
+            _chaseSource.volume = 0f;
         }
 
         void OnDestroy()
@@ -120,6 +130,51 @@ namespace TiantaiDash
             Instance._bgmSource.clip = Instance.bgm;
             Instance._bgmSource.volume = Instance.bgmVolume * volume;
             Instance._bgmSource.Play();
+        }
+
+        /// <summary>
+        /// 追逐段 BGM 开关：两条 AudioSource 交叉淡入淡出（用 unscaled 时间，暂停也照常淡）。
+        /// chaseBgm 没配时安静地什么都不做，不会打断常驻 BGM。
+        /// </summary>
+        public static void PlayChaseBgm(bool on, float fadeTime = 0.5f)
+        {
+            if (Instance == null) return;
+            if (Instance.chaseBgm == null) return;
+
+            if (Instance._bgmFade != null) Instance.StopCoroutine(Instance._bgmFade);
+            Instance._bgmFade = Instance.StartCoroutine(Instance.CrossfadeBgm(on, Mathf.Max(0.05f, fadeTime)));
+        }
+
+        System.Collections.IEnumerator CrossfadeBgm(bool chase, float duration)
+        {
+            float targetMain = chase ? 0f : bgmVolume;
+            float targetChase = chase ? bgmVolume * 0.92f : 0f;
+
+            if (chase && !_chaseSource.isPlaying)
+            {
+                _chaseSource.clip = chaseBgm;
+                _chaseSource.volume = 0f;
+                _chaseSource.Play();
+            }
+
+            float startMain = _bgmSource.volume;
+            float startChase = _chaseSource.volume;
+
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.unscaledDeltaTime;
+                float k = Mathf.Clamp01(t / duration);
+                _bgmSource.volume = Mathf.Lerp(startMain, targetMain, k);
+                _chaseSource.volume = Mathf.Lerp(startChase, targetChase, k);
+                yield return null;
+            }
+
+            _bgmSource.volume = targetMain;
+            _chaseSource.volume = targetChase;
+
+            if (!chase && _chaseSource.isPlaying) _chaseSource.Stop();
+            _bgmFade = null;
         }
     }
 }
