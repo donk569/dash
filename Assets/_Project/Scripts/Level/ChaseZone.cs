@@ -136,7 +136,11 @@ namespace TiantaiDash
                         break;
                     }
 
-                    if (_player.position.x >= StartX) BeginWarning();
+                    // 只在段区间内触发：必须同时满足 >= StartX 和 <= EndX。
+                    // 少了后面这个判断，玩家从段尾之后（传送 / 重开定位）过来会被误判成"还在段内"，
+                    // 直接把 Active 置 true，连带把全场的商店一起禁掉。
+                    float px = _player.position.x;
+                    if (px >= StartX && px <= EndX) BeginWarning();
                     break;
 
                 case Phase.Warning:

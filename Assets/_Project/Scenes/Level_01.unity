@@ -15743,7 +15743,7 @@ Transform:
   m_GameObject: {fileID: 763466214}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1290, y: 0, z: 0}
+  m_LocalPosition: {x: 1335, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -15761,7 +15761,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f28fb6d0364fa84bb2d87f6aa653de4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  startX: 1290
+  startX: 1335
   endX: 1500
   warnTime: 3
   chaseDuration: 8

@@ -27,15 +27,15 @@ namespace TiantaiDash
             BuildDefaultCatalog();
         }
 
-        /// <summary>首批 6 个增益（§8）。后续接 SO 资产时替换这里即可。</summary>
+        /// <summary>首批 6 个增益。描述里的数值必须和实际实现一致，否则玩家会觉得"买了没效果"。</summary>
         void BuildDefaultCatalog()
         {
             catalog.Clear();
             catalog.Add(Define("double_jump", "二段跳", "空中额外跳跃 1 次", UpgradeKind.DoubleJump, 1, false, true));
-            catalog.Add(Define("dash_distance", "疾行延长", "冲刺时长 +50%", UpgradeKind.DashDistance, 3, true, false));
-            catalog.Add(Define("dash_shockwave", "冲击波", "冲刺结束击退附近怪物（半径 1.5u）", UpgradeKind.DashShockwave, 1, false, true));
-            catalog.Add(Define("attack_range", "扩大攻击", "攻击判定范围 +40%", UpgradeKind.AttackRange, 3, true, false));
-            catalog.Add(Define("attack_cd", "快速出手", "攻击冷却 -25%", UpgradeKind.AttackCooldown, 3, true, false));
+            catalog.Add(Define("dash_distance", "疾行延长", "冲刺时长 +40%", UpgradeKind.DashDistance, 3, true, false));
+            catalog.Add(Define("dash_shockwave", "冲击波", "冲刺结束击退附近怪物（半径 4u）", UpgradeKind.DashShockwave, 1, false, true));
+            catalog.Add(Define("attack_range", "扩大攻击", "攻击判定 +12%、剑身 +15%", UpgradeKind.AttackRange, 3, true, false));
+            catalog.Add(Define("attack_cd", "快速出手", "攻击冷却 -18%", UpgradeKind.AttackCooldown, 3, true, false));
             catalog.Add(Define("max_hp", "生命提升", "最大生命 +1 并恢复 1", UpgradeKind.MaxHealth, 2, true, false));
         }
 
@@ -84,13 +84,22 @@ namespace TiantaiDash
             for (int i = 0; i < pool.Count && CurrentChoices.Count < 3; i++)
                 CurrentChoices.Add(pool[i]);
 
-            // 不足 3 个：用可重复项补满，避免出现空卡
+            // 不足 3 张：从"还没满级、且这次没被选过"的池子里补，
+            // 不能像以前那样从全表随机取 —— 会把已满级的项塞进来，玩家花了金币却没有任何效果。
             int guard = 0;
-            while (CurrentChoices.Count < 3 && catalog.Count > 0 && guard++ < 24)
+            while (CurrentChoices.Count < 3 && guard++ < 24)
             {
-                UpgradeDefinition pick = catalog[_rng.Next(catalog.Count)];
-                if (CurrentChoices.Count >= 3) break;
-                CurrentChoices.Add(pick);
+                var spare = new List<UpgradeDefinition>();
+                for (int i = 0; i < catalog.Count; i++)
+                {
+                    UpgradeDefinition c = catalog[i];
+                    if (!IsAvailable(c)) continue;
+                    if (CurrentChoices.Contains(c)) continue;
+                    spare.Add(c);
+                }
+
+                if (spare.Count == 0) break;
+                CurrentChoices.Add(spare[_rng.Next(spare.Count)]);
             }
 
             SelectedCount = 0;
@@ -101,6 +110,10 @@ namespace TiantaiDash
             if (index < 0 || index >= CurrentChoices.Count) return;
 
             UpgradeDefinition def = CurrentChoices[index];
+
+            // 满级不再生效：避免钱花了、属性没变
+            if (def == null || !IsAvailable(def)) return;
+
             _levels[def.id] = GetLevel(def.id) + 1;
             AudioManager.Play("sfx_select", 0.9f);
 
