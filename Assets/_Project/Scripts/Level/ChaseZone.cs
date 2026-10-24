@@ -30,13 +30,17 @@ namespace TiantaiDash
         [Tooltip("进段后多久墙真的出现（给玩家反应时间）")]
         public float warnTime = 3f;
 
+        [Header("追逐时长")]
+        [Tooltip("墙真正追你的秒数（>0 时按时间结束，优先于 endX）。5 = 追 5 秒后放你走")]
+        public float chaseDuration = 5f;
+
         [Header("墙")]
         [Tooltip("墙一开始出现在玩家身后多远（要小于半屏宽约 18u，否则玩家看不见墙）")]
-        public float initialGap = 16f;
-        [Tooltip("墙面推进速度（跑速约 18，21 表示每秒逼近 3u）")]
-        public float wallSpeed = 21f;
+        public float initialGap = 14f;
+        [Tooltip("墙面推进速度（跑速约 18，18.9 表示每秒只逼近 0.9u）")]
+        public float wallSpeed = 18.9f;
         [Tooltip("落后超过 lagBoost 时的加速速度（防挂机）")]
-        public float catchUpSpeed = 30f;
+        public float catchUpSpeed = 27f;
         [Tooltip("落后多少开始加速")]
         public float lagBoost = 22f;
         [Tooltip("墙速至少跟上玩家速度的这个比例 —— 玩家冲刺时墙也跟着加速，不会被甩出画面")]
@@ -68,6 +72,7 @@ namespace TiantaiDash
         float _shakeTimer;
         float _endTimer;
         float _wallSlide;
+        float _chaseTimer;
         /// <summary>Abort 之后要求玩家先退回段口左侧，才允许再次触发（避免失败恢复后立刻重进）。</summary>
         bool _reentryRequired;
 
@@ -190,6 +195,7 @@ namespace TiantaiDash
 
             _wall = ChaseWall.Create(null, new Vector3(_wallX, _wallY, 0f));
             _wallSlide = wallSpeed;
+            _chaseTimer = 0f;
 
             AudioManager.Play("sfx_impact", 1f, 0.75f);
             CameraFollow.Shake(0.5f);
@@ -230,6 +236,14 @@ namespace TiantaiDash
             if (_wallX >= px + catchMargin)
             {
                 FailCaught();
+                return;
+            }
+
+            // 按时间收尾优先：追满 chaseDuration 就放人，不管玩家跑到哪
+            _chaseTimer += dt;
+            if (chaseDuration > 0f && _chaseTimer >= chaseDuration)
+            {
+                BeginEnding();
                 return;
             }
 
@@ -322,6 +336,7 @@ namespace TiantaiDash
             _warnLeft = 0f;
             _endTimer = 0f;
             _wallSlide = 0f;
+            _chaseTimer = 0f;
         }
 
         // ============================================================ 段内规则

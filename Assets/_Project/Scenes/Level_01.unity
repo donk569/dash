@@ -15762,11 +15762,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   startX: 1290
-  endX: 1440
+  endX: 1500
   warnTime: 3
-  initialGap: 16
-  wallSpeed: 21
-  catchUpSpeed: 30
+  chaseDuration: 8
+  initialGap: 14
+  wallSpeed: 18.9
+  catchUpSpeed: 27
   lagBoost: 22
   keepUpRatio: 0.92
   catchMargin: 0.5
@@ -37730,11 +37731,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   startX: 415
-  endX: 615
+  endX: 700
   warnTime: 3
-  initialGap: 16
-  wallSpeed: 21
-  catchUpSpeed: 30
+  chaseDuration: 5
+  initialGap: 14
+  wallSpeed: 18.9
+  catchUpSpeed: 27
   lagBoost: 22
   keepUpRatio: 0.92
   catchMargin: 0.5
