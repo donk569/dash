@@ -170,6 +170,81 @@ namespace TiantaiDash
             {
                 cameraFollow.target = playerHealth.transform;
             }
+
+            AttachGroundShadows();
+            AttachPointLights();
+        }
+
+        /// <summary>
+        /// 交互物点光（M1 §3.2）：印记脉冲青、商店金色、终点青色。
+        /// 霓虹招牌没在这里挂 —— 数量太大，先看这层效果够不够。
+        /// </summary>
+        void AttachPointLights()
+        {
+            Color cyan = new Color(0.44f, 0.90f, 1f, 1f);
+            Color gold = new Color(1f, 0.84f, 0.45f, 1f);
+
+            DashMarker[] markers = FindObjectsOfType<DashMarker>(true);
+            for (int i = 0; i < markers.Length; i++)
+                if (markers[i] != null)
+                    AddGlow(markers[i].gameObject, cyan, 5f, 0.8f, 1.1f, 0.83f, 0.8f, 1.4f);
+
+            ShopIcon[] shops = FindObjectsOfType<ShopIcon>(true);
+            for (int i = 0; i < shops.Length; i++)
+                if (shops[i] != null)
+                    AddGlow(shops[i].gameObject, gold, 7f, 1.5f, 1.1f, 0f, 1.1f, 1.1f);
+
+            PortalExit[] portals = FindObjectsOfType<PortalExit>(true);
+            for (int i = 0; i < portals.Length; i++)
+                if (portals[i] != null)
+                    AddGlow(portals[i].gameObject, cyan, 10f, 1.5f, 1.3f, 0f, 1.3f, 1.3f);
+        }
+
+        static void AddGlow(GameObject go, Color color, float outer, float inner,
+                            float intensity, float pulseHz, float pulseMin, float pulseMax)
+        {
+            if (go == null || go.GetComponent<PointGlow>() != null) return;
+
+            PointGlow glow = go.AddComponent<PointGlow>();
+            glow.color = color;
+            glow.outerRadius = outer;
+            glow.innerRadius = inner;
+            glow.intensity = intensity;
+            glow.pulseSpeed = pulseHz;
+            glow.pulseMin = pulseMin;
+            glow.pulseMax = pulseMax;
+        }
+
+        /// <summary>
+        /// 接地阴影：玩家 / 敌人 / 金币统一挂上（M1 §3.3）。
+        /// 宽度按各自 collider 的横向尺寸推，金币不至于拖一块大黑影。
+        /// </summary>
+        void AttachGroundShadows()
+        {
+            if (playerHealth != null) AddShadow(playerHealth.gameObject);
+
+            EnemyHealth[] enemies = FindObjectsOfType<EnemyHealth>(true);
+            for (int i = 0; i < enemies.Length; i++)
+                if (enemies[i] != null) AddShadow(enemies[i].gameObject);
+
+            Coin[] coins = FindObjectsOfType<Coin>(true);
+            for (int i = 0; i < coins.Length; i++)
+                if (coins[i] != null) AddShadow(coins[i].gameObject);
+        }
+
+        static void AddShadow(GameObject go)
+        {
+            if (go == null || go.GetComponent<GroundShadow>() != null) return;
+
+            GroundShadow shadow = go.AddComponent<GroundShadow>();
+
+            var col = go.GetComponent<Collider2D>();
+            if (col != null)
+            {
+                float w = col.bounds.size.x;
+                shadow.baseWidth = Mathf.Clamp(w * 1.35f, 0.55f, 2.8f);
+                shadow.baseAlpha = Mathf.Clamp(0.30f + w * 0.08f, 0.25f, 0.50f);
+            }
         }
     }
 }
