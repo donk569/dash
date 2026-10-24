@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace TiantaiDash
@@ -55,6 +56,15 @@ namespace TiantaiDash
         [Tooltip("段内是否禁用商店")]
         public bool disableShops = true;
 
+        [Header("无人机（副威胁）")]
+        [Tooltip("追逐段内生几架（0 = 不用；文档建议只放在第二段）")]
+        public int droneCount = 0;
+        [Tooltip("第一架在玩家前方多远（必须在前方，身后会被墙挡住）")]
+        public float droneAheadMin = 2f;
+        [Tooltip("最后一架在玩家前方多远")]
+        public float droneAheadMax = 7f;
+        public float droneHeightBase = 6.5f;
+
         [Header("情绪")]
         public float zoomIn = -0.6f;
         public float shakeInterval = 2f;
@@ -80,6 +90,7 @@ namespace TiantaiDash
         Rigidbody2D _playerRb;
         DashController _dash;
         KillReward _killReward;
+        readonly List<ChaseDrone> _drones = new List<ChaseDrone>();
 
         float _oldCooldown;
         float _oldMergeWindow;
@@ -197,8 +208,42 @@ namespace TiantaiDash
             _wallSlide = wallSpeed;
             _chaseTimer = 0f;
 
+            SpawnDrones();
+
             AudioManager.Play("sfx_impact", 1f, 0.75f);
             CameraFollow.Shake(0.5f);
+        }
+
+        /// <summary>按 droneCount 生成无人机：距离和高度都错开，避免三架排成一排。</summary>
+        void SpawnDrones()
+        {
+            ClearDrones();
+            if (droneCount <= 0 || _player == null) return;
+
+            var health = _player.GetComponent<PlayerHealth>();
+
+            for (int i = 0; i < droneCount; i++)
+            {
+                float t = droneCount <= 1 ? 0f : i / (float)(droneCount - 1);
+                float ahead = Mathf.Lerp(droneAheadMin, droneAheadMax, t);
+                float height = droneHeightBase + i * 1.2f;
+
+                Vector3 at = new Vector3(
+                    _player.position.x + ahead,
+                    _player.position.y + height,
+                    0f);
+
+                ChaseDrone drone = ChaseDrone.Spawn(at, _player, ahead, height);
+                drone.SetPlayer(_player, health);
+                _drones.Add(drone);
+            }
+        }
+
+        void ClearDrones()
+        {
+            for (int i = 0; i < _drones.Count; i++)
+                if (_drones[i] != null) Destroy(_drones[i].gameObject);
+            _drones.Clear();
         }
 
         void TickChase(float dt)
@@ -281,6 +326,7 @@ namespace TiantaiDash
         {
             if (_wall != null) Destroy(_wall.gameObject);
             _wall = null;
+            ClearDrones();
             _phase = Phase.Done;
             if (Current == this) Current = null;
             Active = false;
@@ -297,6 +343,8 @@ namespace TiantaiDash
             CameraFollow.Shake(0.6f);
             AudioManager.PlayChaseBgm(false, 0.3f);
             AudioManager.Play("sfx_hurt", 1f, 0.7f);
+
+            ClearDrones();
 
             if (Current == this) Current = null;
             Active = false;
@@ -316,6 +364,8 @@ namespace TiantaiDash
             if (_wall != null) Destroy(_wall.gameObject);
             _wall = null;
 
+            ClearDrones();
+
             if (Current == this) Current = null;
             Active = false;
             _phase = Phase.Idle;
@@ -327,6 +377,8 @@ namespace TiantaiDash
         {
             if (_wall != null) Destroy(_wall.gameObject);
             _wall = null;
+
+            ClearDrones();
 
             RestoreRules();
             if (Current == this) Current = null;

@@ -15774,6 +15774,10 @@ MonoBehaviour:
   verticalOffset: 5
   chaseDashCooldown: 2.5
   disableShops: 1
+  droneCount: 3
+  droneAheadMin: 2
+  droneAheadMax: 7
+  droneHeightBase: 6.5
   zoomIn: -0.6
   shakeInterval: 2
   shakeAmount: 0.12
@@ -37743,6 +37747,10 @@ MonoBehaviour:
   verticalOffset: 5
   chaseDashCooldown: 2.5
   disableShops: 1
+  droneCount: 0
+  droneAheadMin: 2
+  droneAheadMax: 7
+  droneHeightBase: 6.5
   zoomIn: -0.6
   shakeInterval: 2
   shakeAmount: 0.12
