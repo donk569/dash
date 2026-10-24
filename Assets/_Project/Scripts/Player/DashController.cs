@@ -108,7 +108,13 @@ namespace TiantaiDash
             _dashStartX = transform.position.x;
             if (_rb == null) _rb = GetComponent<Rigidbody2D>();
             _dashEndTime = Time.time + CurrentDuration;
-            if (runner != null) runner.SetDashActive(true, speedMultiplier);
+
+            if (runner != null)
+            {
+                // 冲刺时先解除蓄力减速：否则 _hold 会压住冲刺倍率，出现"原地冲刺"
+                runner.SetHold(false);
+                runner.SetDashActive(true, speedMultiplier);
+            }
 
             if (OnDashStarted != null) OnDashStarted();
         }

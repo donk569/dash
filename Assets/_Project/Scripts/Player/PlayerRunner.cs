@@ -21,8 +21,20 @@ namespace TiantaiDash
         float _holdFactor;
         float _dashMultiplier = 1f;
 
-        public float CurrentSpeed => _hold ? baseSpeed * Mathf.Clamp01(_holdFactor)
-                                           : baseSpeed * (_dashing ? _dashMultiplier : 1f);
+        /// <summary>
+        /// 当前水平速度。**冲刺优先级最高** —— 否则"空中蓄力小跳 → 擦过疾行印记"会变成原地冲刺：
+        /// 那时 <c>_hold</c> 还挂着（跳跃取消蓄力后的减速滑行），会把冲刺倍率整个盖掉，
+        /// 表现为冲刺特效播了但人只以 0.35 倍速蠕动。
+        /// </summary>
+        public float CurrentSpeed
+        {
+            get
+            {
+                if (_dashing) return baseSpeed * _dashMultiplier;
+                if (_hold) return baseSpeed * Mathf.Clamp01(_holdFactor);
+                return baseSpeed;
+            }
+        }
 
         /// <summary>蓄力减速中。</summary>
         public bool IsHeld => _hold;
