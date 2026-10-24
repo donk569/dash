@@ -7744,7 +7744,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 6d655d81aaaf92a4bb9fbb7e7366e949, type: 3}
   moonGlow: {fileID: 38625071}
   moonPulseCycle: 9
-  moonGlowMin: 0.06
+  moonGlowMin: 0.1
   moonGlowMax: 0.3
   meteorEnabled: 1
   meteorIntervalMin: 3.5
@@ -14783,6 +14783,7 @@ MonoBehaviour:
   coinSprite: {fileID: 0}
   digitSheet: {fileID: 21300000, guid: 0cc28e1df9ffeba42a22dc50283a0899, type: 3}
   scanline: {fileID: 21300000, guid: 9916d5c06d7620640997ac96cb51021f, type: 3}
+  uiFont: {fileID: 12800000, guid: dd8fe604b7cc56f44aae63fa7849d517, type: 3}
   uiChargeFrame: {fileID: 21300000, guid: b99c3ebb7ca93dc47bbc737308a866e8, type: 3}
   uiChargeFill: {fileID: 21300000, guid: 0ca0df782b9e5d9458785522346e7951, type: 3}
 --- !u!114 &658396475

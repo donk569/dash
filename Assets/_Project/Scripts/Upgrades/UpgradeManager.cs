@@ -33,10 +33,10 @@ namespace TiantaiDash
             catalog.Clear();
             catalog.Add(Define("double_jump", "二段跳", "空中额外跳跃 1 次", UpgradeKind.DoubleJump, 1, false, true));
             catalog.Add(Define("dash_distance", "疾行延长", "冲刺时长 +40%", UpgradeKind.DashDistance, 3, true, false));
-            catalog.Add(Define("dash_shockwave", "冲击波", "冲刺结束击退附近怪物（半径 4u）", UpgradeKind.DashShockwave, 1, false, true));
-            catalog.Add(Define("attack_range", "扩大攻击", "攻击判定 +12%、剑身 +15%", UpgradeKind.AttackRange, 3, true, false));
+            catalog.Add(Define("dash_shockwave", "冲击波", "冲刺收尾击退周围敌人", UpgradeKind.DashShockwave, 1, false, true));
+            catalog.Add(Define("attack_range", "扩大攻击", "判定 +12%  剑身 +15%", UpgradeKind.AttackRange, 3, true, false));
             catalog.Add(Define("attack_cd", "快速出手", "攻击冷却 -18%", UpgradeKind.AttackCooldown, 3, true, false));
-            catalog.Add(Define("max_hp", "生命提升", "最大生命 +1 并恢复 1", UpgradeKind.MaxHealth, 2, true, false));
+            catalog.Add(Define("max_hp", "生命提升", "最大生命 +1 并回血", UpgradeKind.MaxHealth, 2, true, false));
         }
 
         static UpgradeDefinition Define(string id, string name, string desc, UpgradeKind kind,

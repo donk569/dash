@@ -27,7 +27,7 @@ namespace TiantaiDash
         [Header("月亮")]
         public Transform moonGlow;
         public float moonPulseCycle = 9f;
-        public float moonGlowMin = 0.06f;
+        public float moonGlowMin = 0.10f;
         public float moonGlowMax = 0.30f;
 
         [Header("流星")]
@@ -79,6 +79,7 @@ namespace TiantaiDash
         float _squadTimer;
         float _clock;
         Color _moonBase = Color.white;
+        float _moonBaseScale = 1f;
 
         void Awake()
         {
@@ -92,6 +93,7 @@ namespace TiantaiDash
             {
                 var sr = moonGlow.GetComponent<SpriteRenderer>();
                 if (sr != null) _moonBase = sr.color;
+                _moonBaseScale = moonGlow.localScale.x;
             }
 
             BuildSearchlights();
@@ -149,7 +151,9 @@ namespace TiantaiDash
             c.a = Mathf.Lerp(moonGlowMin, moonGlowMax, t);
             sr.color = c;
 
-            float s = Mathf.Lerp(1f, 1.12f, t);
+            // 以场景里设定的 scale 为基准做呼吸，不再写死 1~1.12，
+            // 否则烘焙时调好的光晕大小会被这里覆盖掉
+            float s = _moonBaseScale * Mathf.Lerp(1f, 1.08f, t);
             moonGlow.localScale = new Vector3(s, s, 1f);
         }
 

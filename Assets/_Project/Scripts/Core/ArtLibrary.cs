@@ -55,6 +55,8 @@ namespace TiantaiDash
         public Sprite[] dustFrames;
         [Tooltip("像素位图数字（0-9 /.smx 一张图）")]
         public Sprite uiDigits;
+        [Tooltip("UI 中文字体（Zpix 12px 像素字体）。字号必须是 12 的倍数才是像素完美")]
+        public Font pixelFont;
         [Tooltip("2x2 扫描线，用于全屏遮罩")]
         public Sprite uiScanline;
         [Tooltip("蓄力条凹槽（96x10）")]

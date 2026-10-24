@@ -61,6 +61,8 @@ namespace TiantaiDash
         public Sprite coinSprite;
         public Sprite digitSheet;
         public Sprite scanline;
+        [Tooltip("UI 中文字体（Zpix 12px 像素字体）。字号必须是 12 的倍数")]
+        public Font uiFont;
         [Tooltip("蓄力条凹槽 / 发光填充（留空用素材总表）")]
         public Sprite uiChargeFrame;
         public Sprite uiChargeFill;
@@ -74,7 +76,6 @@ namespace TiantaiDash
         Texture2D _white;
         Texture2D _digitTex;
         Font _font;
-        bool _fontPixelized;
 
         GUIStyle _hudText;
         GUIStyle _hudTextR;
@@ -108,27 +109,27 @@ namespace TiantaiDash
 
             if (_font == null)
             {
-                _font = Font.CreateDynamicFontFromOSFont(
-                    new[] { "Microsoft YaHei UI", "Microsoft YaHei", "SimHei", "Arial" }, 20);
-            }
-
-            // 中文走系统字体，但把图集采样设成 Point，边缘硬一点，跟像素元素统一
-            if (!_fontPixelized && _font != null && _font.material != null && _font.material.mainTexture != null)
-            {
-                _font.material.mainTexture.filterMode = FilterMode.Point;
-                _fontPixelized = true;
+                // 优先用场景/素材总表里的 Zpix 像素字体（12px 点阵，中文也是像素的）
+                _font = uiFont;
+                if (_font == null && ArtLibrary.Instance != null) _font = ArtLibrary.Instance.pixelFont;
+                // 兜底：系统字体（点采样后边缘偏硬，但字形不是像素的）
+                if (_font == null)
+                    _font = Font.CreateDynamicFontFromOSFont(
+                        new[] { "Microsoft YaHei UI", "Microsoft YaHei", "SimHei", "Arial" }, 24);
             }
 
             if (_hudText != null) return;
 
-            _hudText = Make(20, TextAnchor.MiddleLeft, White);
-            _hudTextR = Make(20, TextAnchor.MiddleRight, White);
-            _title = Make(48, TextAnchor.MiddleCenter, White);
-            _sub = Make(18, TextAnchor.MiddleCenter, TextDim);
-            _cardTitle = Make(28, TextAnchor.UpperCenter, White);
-            _cardDesc = Make(17, TextAnchor.UpperCenter, TextDim, true);
-            _center = Make(18, TextAnchor.MiddleCenter, White);
-            _small = Make(17, TextAnchor.MiddleLeft, TextDim);
+            // 字号必须是 12 的倍数 —— Zpix 是 12px 点阵，非整数倍会被重采样糊掉。
+            // 虚拟坐标系 1280x720，屏幕实际 640x360，所以 24 = 屏幕 12px。
+            _hudText = Make(24, TextAnchor.MiddleLeft, White);
+            _hudTextR = Make(24, TextAnchor.MiddleRight, White);
+            _title = Make(60, TextAnchor.MiddleCenter, White);
+            _sub = Make(24, TextAnchor.MiddleCenter, TextDim);
+            _cardTitle = Make(36, TextAnchor.MiddleLeft, White);
+            _cardDesc = Make(24, TextAnchor.UpperLeft, TextDim, true);
+            _center = Make(24, TextAnchor.MiddleCenter, White);
+            _small = Make(24, TextAnchor.MiddleLeft, TextDim);
             _countdown = Make(120, TextAnchor.MiddleCenter, White);
         }
 
@@ -207,7 +208,12 @@ namespace TiantaiDash
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
             float vw = Screen.width / scale;
 
-            DrawHud(gm, vw);
+            // 面板态（商店/暂停/失败/通关）隐藏游戏 HUD，避免两套信息叠在一起
+            bool panelOpen = gm.CurrentState == GameState.ShopOpen
+                          || gm.CurrentState == GameState.Paused
+                          || gm.CurrentState == GameState.Failed
+                          || gm.CurrentState == GameState.Completed;
+            if (!panelOpen) DrawHud(gm, vw);
 
             switch (gm.CurrentState)
             {
@@ -242,28 +248,52 @@ namespace TiantaiDash
             GUI.color = old;
         }
 
-        /// <summary>像素面板：深底 + 切角亮框（赛博风）+ 四角装饰点。</summary>
+        /// <summary>
+        /// 全息 HUD 面板：1px 细线框 + 四角 L 型角标 + 极暗底。
+        /// 没有切角、没有四角像素点 —— 这套风格靠"线条少而准"存在感，不靠加装饰。
+        /// </summary>
         void Panel(Rect r, Color border, Color bg, bool corners = true)
         {
             Fill(r, bg);
 
-            const float c = 6f;
-            // 切角外框：四角各留 c 像素不画，再用阶梯补角
-            Fill(new Rect(r.x + c, r.y, r.width - c * 2f, 1f), border);
-            Fill(new Rect(r.x + c, r.yMax - 1f, r.width - c * 2f, 1f), border);
-            Fill(new Rect(r.x, r.y + c, 1f, r.height - c * 2f), border);
-            Fill(new Rect(r.xMax - 1f, r.y + c, 1f, r.height - c * 2f), border);
+            Color line = border;
+            line.a *= 0.5f;
+            Fill(new Rect(r.x, r.y, r.width, 1f), line);
+            Fill(new Rect(r.x, r.yMax - 1f, r.width, 1f), line);
+            Fill(new Rect(r.x, r.y, 1f, r.height), line);
+            Fill(new Rect(r.xMax - 1f, r.y, 1f, r.height), line);
 
-            if (corners)
+            if (corners) Corners(r, border, 16f, 2f);
+        }
+
+        /// <summary>四角 L 型角标：这是全息 HUD 唯一的"装饰"，所以给足长度和 2px 粗细。</summary>
+        void Corners(Rect r, Color c, float len, float thick)
+        {
+            Fill(new Rect(r.x, r.y, len, thick), c);
+            Fill(new Rect(r.x, r.y, thick, len), c);
+
+            Fill(new Rect(r.xMax - len, r.y, len, thick), c);
+            Fill(new Rect(r.xMax - thick, r.y, thick, len), c);
+
+            Fill(new Rect(r.x, r.yMax - thick, len, thick), c);
+            Fill(new Rect(r.x, r.yMax - len, thick, len), c);
+
+            Fill(new Rect(r.xMax - len, r.yMax - thick, len, thick), c);
+            Fill(new Rect(r.xMax - thick, r.yMax - len, thick, len), c);
+        }
+
+        /// <summary>面板标题栏：左标题 + 右侧小读数 + 一条分隔线。取代居中大标题。</summary>
+        void PanelHeader(Rect r, string title, string readout, Color accent, GUIStyle titleStyle)
+        {
+            Fill(new Rect(r.x, r.y + 42f, r.width, 1f), new Color(accent.r, accent.g, accent.b, 0.28f));
+
+            LabelShadow(new Rect(r.x + 18f, r.y + 6f, r.width - 200f, 36f), title, titleStyle, accent, 2);
+
+            if (!string.IsNullOrEmpty(readout))
             {
-                for (int i = 0; i < 4; i++)
-                {
-                    float o = c - i - 1f;
-                    Fill(new Rect(r.x + i, r.y + o, 1f, 1f), border);
-                    Fill(new Rect(r.xMax - 1f - i, r.y + o, 1f, 1f), border);
-                    Fill(new Rect(r.x + i, r.yMax - 1f - o, 1f, 1f), border);
-                    Fill(new Rect(r.xMax - 1f - i, r.yMax - 1f - o, 1f, 1f), border);
-                }
+                Color dim = accent;
+                dim.a = 0.72f;
+                LabelShadow(new Rect(r.xMax - 220f, r.y + 10f, 200f, 30f), readout, _hudTextR, dim, 1);
             }
         }
 
@@ -298,8 +328,11 @@ namespace TiantaiDash
             LabelShadow(r, text, style, body, 3);
         }
 
-        /// <summary>文字 + 2px 硬阴影（像素游戏的标准做法，比描边更像老游戏）。</summary>
-        void LabelShadow(Rect r, string text, GUIStyle style, Color? color = null, int shadow = 2)
+        /// <summary>
+        /// 文字 + 硬阴影。像素字体本身边缘就是硬的，阴影只补 1px 就够；
+        /// 给到 2px 会在 12px 汉字周围糊出一圈黑框，反而更脏。
+        /// </summary>
+        void LabelShadow(Rect r, string text, GUIStyle style, Color? color = null, int shadow = 1)
         {
             Color body = color ?? style.normal.textColor;
 
@@ -349,13 +382,13 @@ namespace TiantaiDash
             return text.Length * (DigitW * scale + 2f * scale) - 2f * scale;
         }
 
-        /// <summary>全屏遮罩：深底 + 隔行扫描线（2px 周期），替代平淡的半透明黑。</summary>
+        /// <summary>全屏遮罩：深底 + 很淡的隔行扫描线（2px 周期）。</summary>
         void Backdrop(float vw)
         {
-            Fill(new Rect(0f, 0f, vw, VirtualHeight), new Color(0.02f, 0.03f, 0.06f, 0.74f));
+            Fill(new Rect(0f, 0f, vw, VirtualHeight), new Color(0.015f, 0.025f, 0.05f, 0.91f));
 
-            Color line = new Color(0f, 0f, 0f, 0.10f);
-            for (float y = 0f; y < VirtualHeight; y += 6f)
+            Color line = new Color(0f, 0f, 0f, 0.07f);
+            for (float y = 0f; y < VirtualHeight; y += 8f)
             {
                 Fill(new Rect(0f, y, vw, 2f), line);
             }
@@ -535,7 +568,7 @@ namespace TiantaiDash
             // ---- 最上方中间：击杀进度（每 N 杀回 1 血，满 N 重新计数）----
             DrawKillCounter(vw);
 
-            // ---- 顶部中间：中键冲刺冷却条 ----
+            // ---- 路程显示下方：中键冲刺冷却条 ----
             DrawDashCooldownBar(vw);
 
             // ---- 生命：像素心形 ----
@@ -562,7 +595,7 @@ namespace TiantaiDash
             // ---- 进度条：外框 + 8px 分段填充 ----
             if (tracker != null)
             {
-                var bar = new Rect(20f, 56f, Mathf.Min(vw - 40f, 620f), 16f);
+                var bar = new Rect(20f, 56f, vw - 40f, 14f);
                 PixelBar(bar, tracker.Progress01);
 
                 // 商店标记：按招牌的 X 换算到进度条上；已触发过的变灰
@@ -641,47 +674,59 @@ namespace TiantaiDash
             LabelShadow(new Rect(vw * 0.5f - 110f, 6f, 220f, 22f), txt, _center, c, 2);
         }
 
-        /// <summary>顶部中间的冲刺冷却条：满了才亮，冷却中显示剩余秒数。</summary>
+        /// <summary>
+        /// 冲刺冷却条：放在路程显示（进度条 + 距离）的下方，左对齐。
+        /// 全息 HUD 风格：细线框 + 四段刻度 + 就绪扫光。
+        /// </summary>
         void DrawDashCooldownBar(float vw)
         {
             if (dash == null || !dash.allowManualDash) return;
 
-            const float barW = 170f;
-            const float barH = 9f;
-            float x = Mathf.Round((vw - barW) * 0.5f);
-            float y = 32f;
-
-            Fill(new Rect(x - 2f, y - 2f, barW + 4f, barH + 4f), new Color(0f, 0f, 0f, 0.55f));
+            const float x = 20f;
+            const float y = 126f;
+            const float labelW = 58f;
+            const float barW = 260f;
+            const float barH = 10f;
 
             bool ready = dash.ManualDashReady;
             float p = ready ? 1f : 1f - dash.ManualDashCooldownLeft / dash.ManualCooldown;
             p = Mathf.Clamp01(p);
 
+            LabelShadow(new Rect(x, y - 9f, labelW, 28f), "冲刺", _small, ready ? White : TextDim, 1);
+
+            var bar = new Rect(x + labelW, y, barW, barH);
+
+            Fill(bar, new Color(0f, 0f, 0f, 0.38f));
+
             if (p > 0f)
             {
                 Color fillCol = ready
-                    ? Color.Lerp(Cyan, White, 0.2f + 0.2f * Mathf.Sin(Time.unscaledTime * 5f))
+                    ? Color.Lerp(Cyan, White, 0.25f + 0.25f * Mathf.Sin(Time.unscaledTime * 5f))
                     : CyanDim;
-                Fill(new Rect(x, y, Mathf.Max(1f, Mathf.Floor(barW * p)), barH), fillCol);
+                Fill(new Rect(bar.x, bar.y, Mathf.Max(1f, Mathf.Floor(barW * p)), barH), fillCol);
             }
 
-            // 就绪时一道高光扫过
+            Color line = ready ? Cyan : CyanDim;
+            line.a = ready ? 0.85f : 0.45f;
+            Fill(new Rect(bar.x, bar.y - 1f, barW, 1f), line);
+            Fill(new Rect(bar.x, bar.yMax, barW, 1f), line);
+            Fill(new Rect(bar.x - 1f, bar.y - 1f, 1f, barH + 2f), line);
+            Fill(new Rect(bar.xMax, bar.y - 1f, 1f, barH + 2f), line);
+
+            // 四段刻度
+            for (int i = 1; i < 4; i++)
+                Fill(new Rect(bar.x + Mathf.Round(barW * 0.25f * i), bar.y, 1f, barH),
+                     new Color(0.02f, 0.03f, 0.06f, 0.72f));
+
             if (ready)
             {
                 float sweep = Mathf.Repeat(Time.unscaledTime * 1.1f, 1f);
-                Fill(new Rect(x + Mathf.Floor(barW * sweep), y, 7f, barH), new Color(1f, 1f, 1f, 0.7f));
+                Fill(new Rect(bar.x + Mathf.Floor(barW * sweep), bar.y, 8f, barH),
+                     new Color(1f, 1f, 1f, 0.55f));
             }
 
-            // 冲刺图标（新画的霓虹箭头）
-            if (_dashIcon == null && ArtLibrary.Instance != null) _dashIcon = ArtLibrary.Instance.dashIcon;
-            if (_dashIcon != null)
-            {
-                float icon = 22f;
-                DrawSprite(new Rect(x - icon - 6f, y + barH * 0.5f - icon * 0.5f, icon, icon), _dashIcon);
-            }
-
-            string label = ready ? "中键 冲刺" : "冲刺 " + Mathf.CeilToInt(dash.ManualDashCooldownLeft) + "s";
-            LabelShadow(new Rect(x + barW + 8f, y - 6f, 140f, 22f), label, _small, ready ? White : TextDim, 1);
+            string status = ready ? "READY" : Mathf.CeilToInt(dash.ManualDashCooldownLeft) + "s";
+            LabelShadow(new Rect(bar.xMax + 12f, y - 9f, 140f, 28f), status, _small, ready ? Cyan : TextDim, 1);
         }
 
         /// <summary>
@@ -808,70 +853,87 @@ namespace TiantaiDash
         {
             Backdrop(vw);
 
-            LabelShadow(new Rect(0f, 86f, vw, 56f), "商店", _title, Yellow, 3);
-
             bool canBuy = PlayerWallet.CanAfford(currentShopPrice);
+            int count = upgrades.CurrentChoices.Count;
 
-            // 余额
+            // ================= 顶部：左标题 + 右余额 =================
+            const float padX = 40f;
+            const float headY = 58f;
+
+            LabelShadow(new Rect(padX, headY, 420f, 48f), "商店", _title, Yellow, 3);
+            LabelShadow(new Rect(padX + 2f, headY + 50f, 520f, 30f),
+                canBuy ? "选一件带走" : "金币不够，先多收一些", _small, TextDim, 1);
+
+            // 余额（右上，图标 + 数字）
             string bal = PlayerWallet.Coins.ToString();
             float bw = PixelNumberWidth(bal, 2.6f);
-            float groupW = bw + (coinSprite != null ? 42f : 0f);
-            float gx = vw * 0.5f - groupW * 0.5f;
+            float bx = vw - padX - bw;
+            PixelNumber(bx, headY + 8f, bal, 2.6f, new Color32(255, 214, 120, 255));
+            if (coinSprite != null) DrawSprite(new Rect(bx - 40f, headY + 6f, 34f, 34f), coinSprite);
 
-            if (coinSprite != null)
-                DrawSprite(new Rect(gx, 150f, 30f, 30f), coinSprite);
+            // 标题下的分隔线
+            Fill(new Rect(padX, headY + 94f, vw - padX * 2f, 1f), new Color(Yellow.r, Yellow.g, Yellow.b, 0.22f));
 
-            PixelNumber(gx + (coinSprite != null ? 42f : 0f), 154f, bal, 2.6f, new Color32(255, 214, 120, 255));
-
-            LabelShadow(new Rect(0f, 192f, vw, 24f),
-                canBuy ? "挑一件带走吧" : "金币不够，先多收一些", _sub, TextDim, 1);
-
-            const float cardW = 300f;
-            const float cardH = 258f;
-            const float gap = 26f;
-
-            int count = upgrades.CurrentChoices.Count;
+            // ================= 卡片 =================
+            const float cardW = 340f;
+            const float cardH = 270f;
+            const float gap = 34f;
             float totalW = count * cardW + (count - 1) * gap;
             float startX = (vw - totalW) * 0.5f;
+            const float cardY = 224f;
+
             Color[] accents = { Cyan, Yellow, Purple };
 
             for (int i = 0; i < count; i++)
             {
-                var rect = new Rect(startX + i * (cardW + gap), 228f, cardW, cardH);
+                var rect = new Rect(startX + i * (cardW + gap), cardY, cardW, cardH);
                 UpgradeDefinition def = upgrades.CurrentChoices[i];
                 bool hover = rect.Contains(Event.current.mousePosition) && canBuy;
                 Color accent = accents[i % accents.Length];
 
-                Panel(rect, hover ? Yellow : CyanMid, hover ? PanelBgHi : PanelBg);
-                Fill(new Rect(rect.x + 2f, rect.y + 2f, rect.width - 4f, 4f), canBuy ? accent : CyanDim);
+                // 底色几乎透明，存在感全靠线条
+                Fill(rect, new Color(0.02f, 0.035f, 0.07f, 0.74f));
 
-                PixelNumber(rect.x + 16f, rect.y + 18f, (i + 1).ToString(), 2.2f, canBuy ? accent : CyanDim);
+                Color line = canBuy ? accent : CyanDim;
+                line.a = hover ? 0.95f : 0.42f;
+                Fill(new Rect(rect.x, rect.y, rect.width, 1f), line);
+                Fill(new Rect(rect.x, rect.yMax - 1f, rect.width, 1f), line);
+                Fill(new Rect(rect.x, rect.y, 1f, rect.height), line);
+                Fill(new Rect(rect.xMax - 1f, rect.y, 1f, rect.height), line);
+
+                Corners(rect, canBuy ? accent : CyanDim, hover ? 22f : 18f, 2f);
+
+                // 左上序号 / 右上等级
+                LabelShadow(new Rect(rect.x + 16f, rect.y + 12f, 80f, 30f), "0" + (i + 1), _small, accent, 1);
 
                 int lv = upgrades.GetLevel(def.id);
-                PixelNumber(rect.x + rect.width - 16f, rect.y + 20f, lv + "/" + def.maxLevel, 1.8f, TextDim, true);
+                LabelShadow(new Rect(rect.xMax - 120f, rect.y + 12f, 104f, 30f),
+                    lv + "/" + def.maxLevel, _hudTextR, TextDim, 1);
 
-                LabelShadow(new Rect(rect.x + 16f, rect.y + 50f, rect.width - 32f, 40f),
+                // 名称
+                LabelShadow(new Rect(rect.x + 18f, rect.y + 58f, rect.width - 36f, 48f),
                     def.displayName, _cardTitle, canBuy ? White : TextDim);
 
-                LabelShadow(new Rect(rect.x + 24f, rect.y + 100f, rect.width - 48f, 92f),
+                // 描述
+                LabelShadow(new Rect(rect.x + 18f, rect.y + 114f, rect.width - 36f, 96f),
                     def.description, _cardDesc, TextDim, 1);
 
-                Fill(new Rect(rect.x + 20f, rect.y + rect.height - 50f, rect.width - 40f, 1f), CyanDim);
+                // 底部：价格
+                Fill(new Rect(rect.x + 18f, rect.yMax - 58f, rect.width - 36f, 1f),
+                     new Color(accent.r, accent.g, accent.b, 0.25f));
 
-                // 价格
                 string price = currentShopPrice.ToString();
-                float pw = PixelNumberWidth(price, 2f);
-                float px0 = rect.x + rect.width * 0.5f - (pw + 34f) * 0.5f;
+                float px0 = rect.x + 18f;
+                if (coinSprite != null) DrawSprite(new Rect(px0, rect.yMax - 46f, 26f, 26f), coinSprite);
+                PixelNumber(px0 + 32f, rect.yMax - 43f, price, 2.2f, canBuy ? Yellow : TextDim);
 
-                if (coinSprite != null)
-                    DrawSprite(new Rect(px0, rect.y + rect.height - 42f, 24f, 24f), coinSprite);
-
-                PixelNumber(px0 + 34f, rect.y + rect.height - 38f, price, 2f, canBuy ? Yellow : TextDim);
+                LabelShadow(new Rect(rect.xMax - 140f, rect.yMax - 42f, 122f, 30f),
+                    hover ? "购买" : "按 " + (i + 1), _hudTextR, hover ? Yellow : TextDim, 1);
 
                 if (GUI.Button(rect, GUIContent.none, GUIStyle.none) && canBuy) TryBuy(i);
             }
 
-            LabelShadow(new Rect(0f, 548f, vw, 26f), "按 1 / 2 / 3 购买      Esc 离开", _center, TextDim, 1);
+            LabelShadow(new Rect(0f, VirtualHeight - 48f, vw, 30f), "Esc 离开", _center, TextDim, 1);
         }
 
         void DrawFailed(GameManager gm, float vw)
@@ -896,25 +958,39 @@ namespace TiantaiDash
                 default: rankColor = new Color32(150, 160, 176, 255); break;            // 灰
             }
 
-            // ---- 评级大字 ----
-            LabelShadow(new Rect(0f, 66f, vw, 100f), rank.ToString(), _title, rankColor, 6);
-            LabelShadow(new Rect(0f, 166f, vw, 28f), "通关", _sub, TextDim, 2);
+            float cx = vw * 0.5f;
 
-            // ---- 总分 + 新纪录 ----
+            // ---- 左：评级 / 右：总分，中间一条竖线 ----
+            Color edge = new Color(Cyan.r, Cyan.g, Cyan.b, 0.28f);
+
+            // 像素字体里大写 S 和数字 5 几乎一样，所以大字用中文评语，字母降级成小注
+            string rankWord;
+            switch (rank)
+            {
+                case ScoreRank.S: rankWord = "完美"; break;
+                case ScoreRank.A: rankWord = "优秀"; break;
+                case ScoreRank.B: rankWord = "良好"; break;
+                default: rankWord = "合格"; break;
+            }
+
+            LabelShadow(new Rect(cx - 250f, 148f, 240f, 104f), rankWord, _title, rankColor, 3);
+            LabelShadow(new Rect(cx - 250f, 256f, 240f, 30f), "评级 " + rank, _sub, TextDim, 1);
+
+            Fill(new Rect(cx - 6f, 158f, 1f, 104f), edge);
+
             if (score != null)
             {
                 string total = score.Score.ToString();
-                float tw = PixelNumberWidth(total, 4.6f);
-                PixelNumber(vw * 0.5f - tw * 0.5f, 204f, total, 4.6f, White);
-
-                if (score.NewRecord)
-                    LabelShadow(new Rect(0f, 252f, vw, 24f), "NEW RECORD", _center, Yellow, 2);
+                PixelNumber(cx + 34f, 176f, total, 4.4f, White);
+                LabelShadow(new Rect(cx + 34f, 256f, 320f, 30f),
+                    score.NewRecord ? "总分   NEW RECORD" : "总分",
+                    _small, score.NewRecord ? Yellow : TextDim, 1);
             }
 
-            var panel = new Rect(vw * 0.5f - 340f, 288f, 680f, 210f);
-            Panel(panel, Cyan, PanelBg);
-
-            Fill(new Rect(panel.x + 2f, panel.y + 2f, panel.width - 4f, 4f), Cyan);
+            // ---- 数据表：上下两条横线 + 竖分隔，没有外框 ----
+            var tab = new Rect(cx - 340f, 338f, 680f, 92f);
+            Fill(new Rect(tab.x, tab.y, tab.width, 1f), edge);
+            Fill(new Rect(tab.x, tab.yMax, tab.width, 1f), edge);
 
             string[] keys = { "最高连击", "击杀", "受伤", "用时" };
             string[] vals =
@@ -925,42 +1001,47 @@ namespace TiantaiDash
                 gm.RunTime.ToString("0.0") + "s",
             };
 
-            float colW = panel.width / 4f;
+            float colW = tab.width / 4f;
             for (int i = 0; i < 4; i++)
             {
-                float cx = panel.x + colW * i + colW * 0.5f;
-                LabelShadow(new Rect(cx - colW * 0.5f, panel.y + 34f, colW, 26f), keys[i], _sub, TextDim, 1);
+                float c0 = tab.x + colW * i + colW * 0.5f;
+                LabelShadow(new Rect(c0 - colW * 0.5f, tab.y + 10f, colW, 28f), keys[i], _sub, TextDim, 1);
 
-                float vw2 = PixelNumberWidth(vals[i], 2.4f);
-                PixelNumber(cx - vw2 * 0.5f, panel.y + 66f, vals[i], 2.4f, White);
+                float w2 = PixelNumberWidth(vals[i], 2.4f);
+                PixelNumber(c0 - w2 * 0.5f, tab.y + 46f, vals[i], 2.4f, White);
 
-                if (i < 3)
-                {
-                    Fill(new Rect(panel.x + colW * (i + 1) - 1f, panel.y + 40f, 1f, 60f), CyanDim);
-                }
+                if (i > 0)
+                    Fill(new Rect(tab.x + colW * i, tab.y + 18f, 1f, tab.height - 36f),
+                         new Color(Cyan.r, Cyan.g, Cyan.b, 0.14f));
             }
 
-            Fill(new Rect(panel.x + 24f, panel.y + 130f, panel.width - 48f, 1f), CyanDim);
+            // ---- 底部 ----
+            if (score != null)
+                LabelShadow(new Rect(0f, tab.yMax + 30f, vw, 30f), "最高分 " + score.HighScore, _center, TextDim, 1);
 
-            string best = score != null ? "最高分 " + score.HighScore + "      右键 重开      Enter 下一关（首版仅一关）"
-                                        : "右键 重开      Enter 下一关（首版仅一关）";
-            LabelShadow(new Rect(panel.x, panel.y + 146f, panel.width, 26f), best, _center, TextDim);
+            LabelShadow(new Rect(0f, tab.yMax + 74f, vw, 30f), "右键 重开        Enter 下一关（首版仅一关）", _center, TextDim, 1);
         }
 
         void DrawPanel(float vw, string title, string hint, Color accent, string sub = null)
         {
             Backdrop(vw);
 
-            var panel = new Rect(vw * 0.5f - 250f, 244f, 500f, 184f);
-            Panel(panel, accent, PanelBg);
-            Fill(new Rect(panel.x + 2f, panel.y + 2f, panel.width - 4f, 4f), accent);
+            var panel = new Rect(vw * 0.5f - 270f, 246f, 540f, 186f);
+            Panel(panel, accent, new Color(0.02f, 0.035f, 0.07f, 0.86f));
 
-            GlitchLabel(new Rect(panel.x, panel.y + 30f, panel.width, 56f), title, _title, accent);
+            // 左侧一条 3px 强调色，代替原来的顶部粗色条
+            Fill(new Rect(panel.x, panel.y + 18f, 3f, panel.height - 36f), accent);
+
+            GlitchLabel(new Rect(panel.x + 32f, panel.y + 26f, panel.width - 64f, 62f), title, _title, accent);
 
             if (sub != null)
-                LabelShadow(new Rect(panel.x, panel.y + 92f, panel.width, 28f), sub, _center, White);
+            {
+                Fill(new Rect(panel.x + 32f, panel.y + 94f, panel.width - 64f, 1f),
+                     new Color(accent.r, accent.g, accent.b, 0.25f));
+                LabelShadow(new Rect(panel.x + 32f, panel.y + 104f, panel.width - 64f, 30f), sub, _center, White);
+            }
 
-            LabelShadow(new Rect(panel.x, panel.y + 134f, panel.width, 26f), hint, _center, TextDim);
+            LabelShadow(new Rect(panel.x + 32f, panel.y + 142f, panel.width - 64f, 30f), hint, _center, TextDim, 1);
         }
     }
 }

@@ -145,6 +145,7 @@ namespace TiantaiDash.EditorTools
             ui.heart = lib.heart;
             ui.digitSheet = lib.uiDigits;
             ui.scanline = lib.uiScanline;
+            ui.uiFont = lib.pixelFont;
             FillAudio(audio);
 
             tracker.player = player.transform;
@@ -294,6 +295,7 @@ namespace TiantaiDash.EditorTools
             lib.heart = One("UI/ui_heart");
             lib.uiDigits = One("UI/ui_digits");
             lib.uiScanline = One("UI/ui_scanline");
+            lib.pixelFont = UnityEditor.AssetDatabase.LoadAssetAtPath<Font>("Assets/_Project/Art/Fonts/fusion-pixel-12px.otf");
             // 居合蓄力条（gen_iai_assets.py 生成）
             lib.uiChargeFrame = One("UI/ui_charge_frame");
             lib.uiChargeFill = One("UI/ui_charge_fill");
@@ -877,7 +879,7 @@ namespace TiantaiDash.EditorTools
 
             var moonSr = moon.AddComponent<SpriteRenderer>();
             moonSr.sprite = art.moonGlow;
-            moonSr.color = new Color(1f, 1f, 1f, 0.18f);
+            moonSr.color = new Color(0.70f, 0.76f, 0.92f, 0.18f);
             moonSr.sortingOrder = -390;
 
             // ---- 流星 + 卡车 ----
