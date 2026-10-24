@@ -4,64 +4,58 @@ using UnityEngine;
 namespace TiantaiDash
 {
     /// <summary>
-    /// 崩塌墙本体。**完全程序生成，不依赖任何素材**（避开"半透明色块在 URP 2D 渲染成实心"的老坑，
-    /// 这里全部用不透明纯色竖条叠层次）。
+    /// 追逐段的推进屏障：**一排竖直激光柱**（赛博光柱，参考信标那种垂直光束）。
     ///
-    /// 结构从后到前 5 层：暗紫 → 紫红 → 橙红 → 亮橙，越靠前越窄越亮，
-    /// 每层带不同的相位/振幅做轻微上下抖动，看起来像"整面墙在塌"。
+    /// 和上一版"崩塌墙"的区别：不再是实心板，而是一列间隔排列的光柱，
+    /// 每根柱 = 外晕（贴图 alpha 渐变）+ 中层 + 高亮内芯 + 一段上下流动的能量段。
+    /// 高度默认 90（屏幕只有 33.75 高），所以永远看不到柱子的上下端点。
+    ///
+    /// 只负责视觉与自身动画，推进/判定全在 <see cref="ChaseZone"/>。
     /// </summary>
     public class ChaseWall : MonoBehaviour
     {
         public float width = 13f;
-        public float height = 46f;
-        /// <summary>推进速度（由 ChaseZone 每帧写入）</summary>
-        public float speed;
+        public float height = 90f;
 
-        class Slab
+        [Header("柱体")]
+        [Tooltip("排几根激光柱")]
+        public int beamCount = 8;
+        [Tooltip("单根光柱的外晕宽度")]
+        public float glowWidth = 2.6f;
+        [Tooltip("内芯宽度")]
+        public float coreWidth = 0.24f;
+        [Tooltip("能量段上下流动的速度")]
+        public float flowSpeed = 9f;
+
+        class Beam
         {
-            public Transform t;
-            public SpriteRenderer sr;
-            public float baseX;
-            public float baseY;
+            public Transform root;
+            public SpriteRenderer core;
+            public Transform pulse;
+            public float x;
             public float phase;
-            public float amp;
-            public float wobble;
         }
 
-        class Mote
-        {
-            public Transform t;
-            public float y;
-            public float baseX;
-            public float speed;
-            public float phase;
-            public float sway;
-        }
+        static Sprite _unit;
+        static Sprite _glow;
 
-        static Sprite _unitSprite;
-        readonly List<Slab> _slabs = new List<Slab>();
-        readonly List<Mote> _motes = new List<Mote>();
-        Slab _core;
-        SpriteRenderer _scanA;
-        SpriteRenderer _scanB;
+        readonly List<Beam> _beams = new List<Beam>();
         float _time;
+        float _fadeAlpha = 1f;
+        float _fadeStart;
 
-        // 赛博紫蓝配色：深靛蓝打底 → 亮蓝紫前沿 → 青白火花
-        // （和项目色板同族：#6FE6FF 青 / #BA8CFF 紫，这里取更偏蓝的区间）
-        static readonly Color32 CBack = new Color32(10, 14, 38, 255);      // 近黑蓝
-        static readonly Color32 CBody = new Color32(22, 32, 90, 255);      // 深靛
-        static readonly Color32 CGlow = new Color32(42, 58, 168, 255);     // 靛蓝
-        static readonly Color32 CHot = new Color32(74, 104, 232, 255);    // 亮蓝紫
-        static readonly Color32 CCore = new Color32(122, 148, 224, 255);   // 前沿亮边（不刺眼）
-        static readonly Color32 CScan = new Color32(168, 220, 255, 255);   // 扫描线（偏青，对比强）
-        static readonly Color32 CMote = new Color32(96, 146, 216, 255);    // 墙内光点（压暗，不抢眼）
+        // 赛博紫蓝：外晕偏紫、内芯淡紫白，整体比纯蓝更"赛博"
+        static readonly Color32 CGlow = new Color32(122, 106, 255, 255);
+        static readonly Color32 CMid = new Color32(96, 82, 244, 255);
+        static readonly Color32 CCore = new Color32(202, 186, 255, 255);
+        static readonly Color32 CPulse = new Color32(234, 226, 255, 255);
 
-        /// <summary>1×1 世界单位的纯白 sprite，用 color 染色。</summary>
-        static Sprite UnitSprite
+        /// <summary>1×1 世界单位的纯白方块（PPU=4）。</summary>
+        static Sprite Unit
         {
             get
             {
-                if (_unitSprite != null) return _unitSprite;
+                if (_unit != null) return _unit;
 
                 var tex = new Texture2D(4, 4, TextureFormat.RGBA32, false);
                 var px = new Color32[16];
@@ -71,14 +65,45 @@ namespace TiantaiDash
                 tex.wrapMode = TextureWrapMode.Clamp;
                 tex.Apply();
 
-                // PPU = 4 → 4px 贴图 = 1 世界单位，之后全靠 localScale 拉
-                _unitSprite = Sprite.Create(tex, new Rect(0f, 0f, 4f, 4f), new Vector2(0.5f, 0.5f), 4f);
-                _unitSprite.name = "ChaseUnit";
-                return _unitSprite;
+                _unit = Sprite.Create(tex, new Rect(0f, 0f, 4f, 4f), new Vector2(0.5f, 0.5f), 4f);
+                _unit.name = "BeamUnit";
+                return _unit;
             }
         }
 
-        public static ChaseWall Create(Transform parent, Vector3 at, float width = 13f, float height = 46f)
+        /// <summary>
+        /// 外晕：横向 alpha 渐变（中心 1 → 边缘 0），6×1 世界单位。
+        /// **alpha 烘在贴图里**，不靠 SpriteRenderer.color.a —— 那个在 URP 2D 会被渲染成实心（项目老坑）。
+        /// </summary>
+        static Sprite Glow
+        {
+            get
+            {
+                if (_glow != null) return _glow;
+
+                const int W = 24;
+                const int H = 4;
+                var tex = new Texture2D(W, H, TextureFormat.RGBA32, false);
+
+                for (int x = 0; x < W; x++)
+                {
+                    float t = Mathf.Abs(x - (W - 1) * 0.5f) / ((W - 1) * 0.5f);
+                    float a = Mathf.Pow(Mathf.Clamp01(1f - t), 2.1f);
+                    var c = new Color(1f, 1f, 1f, a);
+                    for (int y = 0; y < H; y++) tex.SetPixel(x, y, c);
+                }
+
+                tex.filterMode = FilterMode.Bilinear;   // 光晕允许柔和，这里不追求像素阶梯
+                tex.wrapMode = TextureWrapMode.Clamp;
+                tex.Apply();
+
+                _glow = Sprite.Create(tex, new Rect(0f, 0f, W, H), new Vector2(0.5f, 0.5f), H);
+                _glow.name = "BeamGlow";
+                return _glow;
+            }
+        }
+
+        public static ChaseWall Create(Transform parent, Vector3 at, float width = 13f, float height = 90f)
         {
             var go = new GameObject("ChaseWall");
             go.transform.SetParent(parent, false);
@@ -93,166 +118,111 @@ namespace TiantaiDash
 
         void Build()
         {
-            // 赛博紫蓝：深靛 → 亮紫 → 近白紫。右侧（前沿）对齐、左侧逐层缩进，
-            // 看起来是"一整堵墙 + 发光的推进面"，而不是几条并排的色条。
-            AddSlab("Back", CBack, 1.00f, 1.00f, 0.00f, 0.00f);
-            AddSlab("Body", CBody, 0.94f, 0.99f, 0.50f, 0.05f);
-            AddSlab("Glow", CGlow, 0.86f, 0.98f, 1.00f, 0.09f);
-            AddSlab("Hot", CHot, 0.70f, 0.96f, 1.50f, 0.13f);
-            _core = AddSlab("Core", CCore, 0.42f, 0.86f, 2.00f, 0.19f);
+            int count = Mathf.Max(1, beamCount);
+            float spacing = width / count;
 
-            // 前沿碎块已移除：那些浅色小方块上下浮动，在右边缘看着像"白色升降物"，很扎眼。
-            // 边缘的交错感改由 5 层不同的高度/振幅差来做（见上方 AddSlab 的 hScale 与 amp）。
-
-            // 扫描线：两条不同速度、不同方向的亮线扫过墙面（赛博感的主力）
-            _scanA = MakeDecor("ScanA", CScan, 33);
-            _scanA.transform.localScale = new Vector3(width * 0.96f, 0.34f, 1f);
-
-            _scanB = MakeDecor("ScanB", new Color32(206, 186, 255, 255), 33);
-            _scanB.transform.localScale = new Vector3(width * 0.82f, 0.18f, 1f);
-
-            // 内部光点：只在墙体里面上浮（不要飘到前沿外面，否则会在右边缘变成一串"白色升降物"）
-            for (int i = 0; i < 7; i++)
+            for (int i = 0; i < count; i++)
             {
-                SpriteRenderer sr = MakeDecor("Mote" + i, CMote, 31);
-                sr.transform.localScale = Vector3.one * 0.3f;
-
-                var m = new Mote();
-                m.t = sr.transform;
-                m.baseX = width * Random.Range(-0.02f, 0.20f);
-                m.y = Random.Range(-height * 0.5f, height * 0.5f);
-                m.speed = Random.Range(2.5f, 6f);
-                m.phase = Random.Range(0f, 6.28f);
-                m.sway = Random.Range(0.5f, 1.3f);
-                _motes.Add(m);
+                float x = -width * 0.5f + spacing * (i + 0.5f);
+                _beams.Add(MakeBeam(x, i));
             }
         }
 
-        /// <summary>纯装饰块（不参与 Slab 的抖动）。</summary>
-        SpriteRenderer MakeDecor(string name, Color color, int order)
+        Beam MakeBeam(float x, int index)
+        {
+            var root = new GameObject("Beam" + index);
+            root.transform.SetParent(transform, false);
+            root.transform.localPosition = new Vector3(x, 0f, 0f);
+
+            // 外晕
+            var glow = NewPart(root.transform, "Glow", CGlow, 28);
+            glow.transform.localScale = new Vector3(glowWidth / 6f, height, 1f);
+
+            // 中层
+            var mid = NewPart(root.transform, "Mid", CMid, 29);
+            mid.transform.localScale = new Vector3(0.62f, height, 1f);
+
+            // 内芯（最亮）
+            var core = NewPart(root.transform, "Core", CCore, 30);
+            core.transform.localScale = new Vector3(coreWidth, height, 1f);
+
+            // 流动能量段：一段短的高亮沿着柱子上下跑
+            var pulse = NewPart(root.transform, "Pulse", CPulse, 31);
+            pulse.transform.localScale = new Vector3(coreWidth * 2.1f, 4.5f, 1f);
+
+            var beam = new Beam();
+            beam.root = root.transform;
+            beam.core = core;
+            beam.pulse = pulse.transform;
+            beam.x = x;
+            beam.phase = index * 0.9f + Random.Range(0f, 1.4f);
+            return beam;
+        }
+
+        SpriteRenderer NewPart(Transform parent, string name, Color color, int order)
         {
             var go = new GameObject(name);
-            go.transform.SetParent(transform, false);
+            go.transform.SetParent(parent, false);
 
             var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = UnitSprite;
+            sr.sprite = name == "Glow" ? Glow : Unit;
             sr.color = color;
             sr.sortingOrder = order;
             return sr;
-        }
-
-        Slab AddSlab(string name, Color color, float wScale, float hScale, float xOffset, float amp)
-        {
-            Slab s = MakeSlab(name, color, width * wScale, height * hScale);
-            s.baseX = xOffset;
-            s.baseY = 0f;
-            s.phase = Random.Range(0f, 6.28f);
-            s.amp = amp * height * 0.1f;
-            s.wobble = 1.6f;
-            return s;
-        }
-
-        Slab MakeSlab(string name, Color color, float w, float h)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(transform, false);
-            go.transform.localScale = new Vector3(w, h, 1f);
-
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = UnitSprite;
-            sr.color = color;
-            sr.sortingOrder = 30;   // 压在角色(20)/场景之上
-
-            var s = new Slab();
-            s.t = go.transform;
-            s.sr = sr;
-            _slabs.Add(s);
-            return s;
         }
 
         void Update()
         {
             _time += Time.deltaTime;
 
-            for (int i = 0; i < _slabs.Count; i++)
+            float span = height;   // 能量段跑完整根柱子
+
+            for (int i = 0; i < _beams.Count; i++)
             {
-                Slab s = _slabs[i];
-                if (s.t == null) continue;
+                Beam b = _beams[i];
+                if (b.root == null) continue;
 
-                // 每层相位不同 → 整体像在流动，而不是一块板在平移
-                float y = s.baseY + Mathf.Sin(_time * s.wobble + s.phase) * s.amp;
-                s.t.localPosition = new Vector3(s.baseX, y, 0f);
+                // 能量段：从下往上循环
+                float y = Mathf.Repeat(_time * flowSpeed + b.phase * 12f, span) - span * 0.5f;
+                if (b.pulse != null)
+                {
+                    b.pulse.localPosition = new Vector3(0f, y, 0f);
+                    b.pulse.localScale = new Vector3(coreWidth * 2.1f, 4.5f * _fadeAlpha, 1f);
+                }
+
+                // 每根柱子的内芯亮度轻微错相脉动，整片看起来在"呼吸"
+                if (b.core != null)
+                {
+                    float k = 0.5f + 0.5f * Mathf.Sin(_time * 3.4f + b.phase);
+                    Color c = Color.Lerp(new Color(0.66f, 0.60f, 1f), new Color(0.88f, 0.85f, 1f), k);
+                    c.a = _fadeAlpha;
+                    b.core.color = c;
+                }
             }
-
-            // Core 呼吸：亮度脉动，看起来像"能量墙还在供电"。alpha 跟随淡出，不要覆盖掉。
-            if (_core != null && _core.sr != null)
-            {
-                float k = 0.5f + 0.5f * Mathf.Sin(_time * 5.5f);
-                Color c = Color.Lerp(new Color(0.34f, 0.44f, 0.86f), new Color(0.56f, 0.68f, 0.98f), k);
-                c.a = _core.sr.color.a;
-                _core.sr.color = c;
-            }
-
-            // 两条扫描线，速度/方向不同，扫过整面墙
-            float span = height * 1.15f;
-            if (_scanA != null)
-            {
-                float y = Mathf.Repeat(_time * 16f, span) - span * 0.5f;
-                _scanA.transform.localPosition = new Vector3(width * 0.01f, y, 0f);
-            }
-            if (_scanB != null)
-            {
-                float y = Mathf.Repeat(-_time * 9.5f, span) - span * 0.5f;
-                _scanB.transform.localPosition = new Vector3(width * 0.07f, y, 0f);
-            }
-
-            // 前沿光点：往上飘，越靠中间越大越亮；用缩放做明暗（避开半透明色块在 URP 2D 渲染成实心的坑）
-            for (int i = 0; i < _motes.Count; i++)
-            {
-                Mote m = _motes[i];
-                if (m.t == null) continue;
-
-                m.y += m.speed * Time.deltaTime;
-                if (m.y > height * 0.5f) m.y = -height * 0.5f;
-
-                float x = m.baseX + Mathf.Sin(_time * m.sway + m.phase) * 0.7f;
-                m.t.localPosition = new Vector3(x, m.y, 0f);
-
-                float fade = Mathf.Clamp01(1f - Mathf.Abs(m.y) / (height * 0.5f));
-                float s = (0.08f + 0.30f * fade) * _fadeAlpha;
-                m.t.localScale = new Vector3(s, s, 1f);
-            }
-
-            if (_scanA != null)
-                _scanA.transform.localScale = new Vector3(width * 0.96f, 0.34f * _fadeAlpha, 1f);
-            if (_scanB != null)
-                _scanB.transform.localScale = new Vector3(width * 0.82f, 0.18f * _fadeAlpha, 1f);
         }
 
-        float _fadeAlpha = 1f;
+        public void BeginFade()
+        {
+            _fadeStart = Time.time;
+        }
 
-        /// <summary>结束阶段：墙停在原地、整体淡出（不瞬间消失在玩家眼前）。</summary>
+        /// <summary>结束阶段：整体淡出（贴图自带 alpha 的那层也跟着变淡）。</summary>
         public void FadeOut(float dt, float duration)
         {
             if (duration <= 0f) return;
-
             _fadeAlpha = Mathf.Clamp01(1f - Mathf.Clamp01(Time.time - _fadeStart) / duration);
 
-            // Slab 用 alpha 淡出（Core 的 alpha 每帧会跟着保住，不会被呼吸覆盖）
-            for (int i = 0; i < _slabs.Count; i++)
+            // 外晕/中层是纯色 + 贴图 alpha，这里用 color.a 配合，能正常变淡
+            var renderers = GetComponentsInChildren<SpriteRenderer>();
+            for (int i = 0; i < renderers.Length; i++)
             {
-                SpriteRenderer sr = _slabs[i].sr;
+                SpriteRenderer sr = renderers[i];
                 if (sr == null) continue;
+
                 Color c = sr.color;
                 c.a = _fadeAlpha;
                 sr.color = c;
             }
-        }
-
-        float _fadeStart;
-        public void BeginFade()
-        {
-            _fadeStart = Time.time;
         }
     }
 }
