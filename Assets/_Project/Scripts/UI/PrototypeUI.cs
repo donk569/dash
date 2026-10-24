@@ -29,6 +29,14 @@ namespace TiantaiDash
         public IaiCharge iai;
         public ScoreKeeper score;
 
+        // 连击数字的动画状态：加链瞬间放大回弹 + 一圈扩散冲击环
+        const float ComboPunchTime = 0.16f;
+        const float ComboRingTime = 0.30f;
+        const float ComboBaseScale = 2.0f;
+        int _lastComboChain;
+        float _comboPunchUntil;
+        float _comboRingFrom = -99f;
+
         [Header("商店")]
         [Tooltip("由 ShopIcon 在打开时写入")]
         public int currentShopPrice = 3;
@@ -379,9 +387,20 @@ namespace TiantaiDash
         /// <summary>
         /// 连击表现：角色头顶 `x12` + 右侧倍率竖条。
         /// 倍率颜色 白 → 黄 → 紫 → 红；断链前 0.6s 数字抖动并转红（ChainWarning）。
+        /// 头顶数字刻意做得小（2.0×），靠"加链弹一下 + 一圈冲击环"给反馈，不靠体积压人。
         /// </summary>
         void DrawCombo(float vw)
         {
+            float now = Time.unscaledTime;
+
+            // 链数上涨 → 弹入 + 冲击环
+            if (score.Chain > _lastComboChain)
+            {
+                _comboPunchUntil = now + ComboPunchTime;
+                _comboRingFrom = now;
+            }
+            _lastComboChain = score.Chain;
+
             float m = score.Multiplier;
 
             Color tier;
@@ -397,7 +416,7 @@ namespace TiantaiDash
             if (health != null && Camera.main != null)
             {
                 float scale = Screen.height / VirtualHeight;
-                Vector3 world = health.transform.position + Vector3.up * 3.4f;
+                Vector3 world = health.transform.position + Vector3.up * 3.1f;
                 Vector3 sp = Camera.main.WorldToScreenPoint(world);
 
                 if (sp.z > 0f)
@@ -405,12 +424,48 @@ namespace TiantaiDash
                     float vx = sp.x / Mathf.Max(0.0001f, scale);
                     float vy = (Screen.height - sp.y) / Mathf.Max(0.0001f, scale);
 
-                    // 告警时高频抖动，像数字"快撑不住了"
-                    float jitter = warn ? Mathf.Sin(Time.unscaledTime * 62f) * 2.5f : 0f;
+                    // 刚加链：瞬间放大再回弹（1 + 0.32 → 1）
+                    float punch = 0f;
+                    if (now < _comboPunchUntil)
+                        punch = Mathf.Clamp01((_comboPunchUntil - now) / ComboPunchTime);
+                    float txtScale = ComboBaseScale * (1f + 0.32f * punch);
+
+                    // 告警时高频细抖，像数字"快撑不住了"
+                    float jitter = warn ? Mathf.Sin(now * 62f) * 2f : 0f;
 
                     string txt = "x" + score.Chain;
-                    float w = PixelNumberWidth(txt, 3f);
-                    PixelNumber(vx - w * 0.5f + jitter, vy - 16f + jitter, txt, 3f, chainColor);
+                    float tw = PixelNumberWidth(txt, txtScale);
+                    float tx = vx - tw * 0.5f + jitter;
+                    float ty = vy - 14f + jitter;
+
+                    // ---- 冲击环：一圈方框向外扩散并淡出 ----
+                    float ringAge = now - _comboRingFrom;
+                    if (ringAge >= 0f && ringAge < ComboRingTime)
+                    {
+                        float t = ringAge / ComboRingTime;
+                        float grow = 1f + 1.15f * t;
+                        float rw = tw * grow;
+                        float rh = 16f * txtScale * 0.5f * grow;
+                        Color rc = chainColor;
+                        rc.a = 0.8f * (1f - t);
+
+                        float cx = vx - rw * 0.5f + jitter;
+                        float cy = ty + (16f * txtScale * 0.5f) - rh * 0.5f;
+                        const float th = 2f;
+                        Fill(new Rect(cx, cy, rw, th), rc);                    // 上
+                        Fill(new Rect(cx, cy + rh - th, rw, th), rc);           // 下
+                        Fill(new Rect(cx, cy, th, rh), rc);                     // 左
+                        Fill(new Rect(cx + rw - th, cy, th, rh), rc);           // 右
+                    }
+
+                    // ---- 硬描边：四向偏移各画一次深色，像素字才立得住 ----
+                    Color outline = new Color(0.02f, 0.03f, 0.07f, 0.92f);
+                    PixelNumber(tx - 1f, ty, txt, txtScale, outline);
+                    PixelNumber(tx + 1f, ty, txt, txtScale, outline);
+                    PixelNumber(tx, ty - 1f, txt, txtScale, outline);
+                    PixelNumber(tx, ty + 1f, txt, txtScale, outline);
+
+                    PixelNumber(tx, ty, txt, txtScale, chainColor);
                 }
             }
 
@@ -428,8 +483,55 @@ namespace TiantaiDash
             PixelNumber(vw - 44f - mw, bar.y - 34f, mtxt, 2.4f, tier);
         }
 
+        /// <summary>
+        /// 追逐段的压迫感：左侧屏边红渐变（8 条不同 alpha 的竖条拼出渐变，不用贴图，避开半透明色块老坑）
+        /// + 顶部闪烁红条 + 预警倒计时 / "跑！"。
+        /// </summary>
+        void DrawChaseAlert(float vw)
+        {
+            ChaseZone zone = ChaseZone.Current;
+            if (zone == null || !zone.IsHot) return;
+
+            Color red = new Color32(255, 60, 72, 255);
+            float pulse = 0.55f + 0.45f * Mathf.PingPong(Time.unscaledTime * 2.4f, 1f);
+
+            // ---- 左侧屏边 ----
+            float edgeW = vw * 0.09f;
+            const int steps = 8;
+            float sw = edgeW / steps;
+            for (int i = 0; i < steps; i++)
+            {
+                float k = 1f - (float)i / steps;
+                Color c = red;
+                c.a = 0.40f * k * pulse;
+                Fill(new Rect(i * sw, 0f, sw + 0.6f, VirtualHeight), c);
+            }
+
+            // ---- 顶部横条 ----
+            Color barC = red;
+            barC.a = 0.50f + 0.35f * pulse;
+            Fill(new Rect(0f, 0f, vw, 6f), barC);
+
+            // ---- 文案（避开顶部击杀计数 y≈16 和冲刺条 y≈30）----
+            if (zone.IsWarning)
+            {
+                LabelShadow(new Rect(0f, 62f, vw, 46f), "崩塌来了", _title, red, 3);
+
+                string cnt = Mathf.Max(1, Mathf.CeilToInt(zone.WarnLeft)).ToString();
+                float cw = PixelNumberWidth(cnt, 3.2f);
+                PixelNumber(vw * 0.5f - cw * 0.5f, 116f, cnt, 3.2f, White);
+            }
+            else if (zone.IsChasing)
+            {
+                LabelShadow(new Rect(0f, 56f, vw, 40f), "跑！", _title, red, 3);
+            }
+        }
+
         void DrawHud(GameManager gm, float vw)
         {
+            // ---- 追逐段：屏边红渐变 + 顶部警告（最先画，垫在其它 HUD 下面）----
+            DrawChaseAlert(vw);
+
             // ---- 最上方中间：击杀进度（每 N 杀回 1 血，满 N 重新计数）----
             DrawKillCounter(vw);
 
@@ -774,7 +876,9 @@ namespace TiantaiDash
 
         void DrawFailed(GameManager gm, float vw)
         {
-            string reason = (health != null && health.CurrentHealth <= 0) ? "生命归零" : "掉落屋顶";
+            string reason = !string.IsNullOrEmpty(gm.FailReason)
+                ? gm.FailReason
+                : (health != null && health.CurrentHealth <= 0) ? "生命归零" : "掉落屋顶";
             DrawPanel(vw, "失败", "右键 重开", new Color32(255, 77, 109, 255), reason);
         }
 

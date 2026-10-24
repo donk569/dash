@@ -17,6 +17,9 @@ namespace TiantaiDash
         public InputHandler Input { get; set; }
         public float RunTime { get; private set; }
 
+        /// <summary>失败原因文案（追逐段被墙追上会写成"被城市吞没"）。空 = 走默认判定。</summary>
+        public string FailReason { get; set; }
+
         void Awake()
         {
             if (Instance != null && Instance != this)
@@ -72,6 +75,7 @@ namespace TiantaiDash
         {
             CurrentState = GameState.Playing;
             RunTime = 0f;
+            FailReason = null;
             Time.timeScale = 1f;
             OnStateChanged?.Invoke(CurrentState);
         }

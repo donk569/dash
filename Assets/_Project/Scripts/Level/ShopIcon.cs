@@ -119,6 +119,10 @@ namespace TiantaiDash
             if (_opened && _sr != null) _sr.color = new Color(0.35f, 0.4f, 0.5f, 0.7f);
 
             if (_opened) return;
+
+            // 追逐段内商店禁用：停下来买东西会直接毁掉这一段
+            if (ChaseZone.ShopsBlocked) return;
+
             if (_player == null)
             {
                 var hp = FindObjectOfType<PlayerHealth>();

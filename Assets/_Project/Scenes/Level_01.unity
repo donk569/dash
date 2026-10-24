@@ -15716,6 +15716,65 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4705811326238731760, guid: 88bbd0dce29ca284497e1b409351cd93, type: 3}
   m_PrefabInstance: {fileID: 758736495}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &763466214
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 763466215}
+  - component: {fileID: 763466216}
+  m_Layer: 0
+  m_Name: ChaseZone_B
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &763466215
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 763466214}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1290, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1370176981}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &763466216
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 763466214}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f28fb6d0364fa84bb2d87f6aa653de4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  startX: 1290
+  endX: 1440
+  warnTime: 3
+  initialGap: 26
+  wallSpeed: 20
+  catchUpSpeed: 24
+  lagBoost: 30
+  catchMargin: 0.5
+  verticalOffset: 5
+  chaseDashCooldown: 2.5
+  disableShops: 1
+  zoomIn: -0.6
+  shakeInterval: 2
+  shakeAmount: 0.12
+  endFadeTime: 1.2
 --- !u!1001 &766148663
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -27066,6 +27125,39 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!1 &1370176980
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1370176981}
+  m_Layer: 0
+  m_Name: ChaseZones
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1370176981
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1370176980}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1990518881}
+  - {fileID: 763466215}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1371323951
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -37591,6 +37683,65 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!1 &1990518880
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1990518881}
+  - component: {fileID: 1990518882}
+  m_Layer: 0
+  m_Name: ChaseZone_A
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1990518881
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1990518880}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 500, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1370176981}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1990518882
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1990518880}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f28fb6d0364fa84bb2d87f6aa653de4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  startX: 500
+  endX: 615
+  warnTime: 3
+  initialGap: 26
+  wallSpeed: 19.5
+  catchUpSpeed: 24
+  lagBoost: 30
+  catchMargin: 0.5
+  verticalOffset: 5
+  chaseDashCooldown: 2.5
+  disableShops: 1
+  zoomIn: -0.6
+  shakeInterval: 2
+  shakeAmount: 0.12
+  endFadeTime: 1.2
 --- !u!1001 &1991462811
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -41303,3 +41454,4 @@ SceneRoots:
   - {fileID: 158427046}
   - {fileID: 912599414}
   - {fileID: 444258525}
+  - {fileID: 1370176981}
